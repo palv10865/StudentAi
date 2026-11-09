@@ -2,6 +2,13 @@ plugins {
     id 'com.android.application'
 }
 
+def prepareWebAssets = tasks.register('prepareWebAssets', Copy) {
+    from(rootProject.file('../')) {
+        include 'index.html', 'styles.css', 'app.js', 'gemini.js', 'subjects.js', 'tools.js'
+    }
+    into(layout.buildDirectory.dir('generated/web-assets'))
+}
+
 android {
     namespace 'com.vipinpal.studymindai'
     compileSdk 34
@@ -60,10 +67,7 @@ android {
 
     sourceSets {
         main {
-            assets {
-                srcDir rootProject.file('../')
-                include 'index.html', 'styles.css', 'app.js', 'gemini.js', 'subjects.js', 'tools.js'
-            }
+            assets.srcDir(prepareWebAssets)
         }
     }
 }
