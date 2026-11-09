@@ -73,6 +73,20 @@ jobs:
         id: debug-apk
         run: echo "apk_path=android/app/build/outputs/apk/debug/app-debug.apk" >> "$GITHUB_OUTPUT"
 
+      - name: Verify installable APK package
+        env:
+          APK_PATH: ${{ steps.signing.outputs.release_signed == 'true' && steps.release-apk.outputs.apk_path || steps.debug-apk.outputs.apk_path }}
+        run: |
+          test -s "$APK_PATH"
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK_PATH"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK_PATH" | grep -q "package: name='com.vipinpal.studymindai"
+          for asset in index.html styles.css app.js gemini.js subjects.js tools.js; do
+            unzip -Z1 "$APK_PATH" | grep -qx "assets/$asset" || {
+              echo "Missing bundled app asset: $asset"
+              exit 1
+            }
+          done
+
       - name: Upload APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:

@@ -74,6 +74,8 @@ The workflow publishes an installable debug-signed APK by default. For a stable 
 
 Never commit or share the keystore or its passwords. Google Play App Signing is enabled in Play Console when setting up the app; the upload key signs submissions, and Google manages the app-signing key. A GitHub release is a direct APK download, not a Play Store listing.
 
+Without a configured stable signing key, each CI debug APK may use a different key. Android can reject it as an update to an older debug APK; uninstall the old debug build before installing the new one (this removes its local app data), or configure the signing secrets above for stable updates. CI verifies the APK signature and all bundled app assets before publishing.
+
 ## 🛠️ Tech Stack
 - Frontend: HTML5, CSS3, JavaScript
 - AI: Google Gemini 2.0 Flash API
