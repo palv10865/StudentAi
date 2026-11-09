@@ -5,10 +5,13 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,43 +24,73 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platforms;android-34
+            build-tools;34.0.0
 
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.4'
 
-      - name: Build Debug APK
+      - name: Prepare optional release signing key
+        id: signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          cd android
-          ./gradlew assembleDebug
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] && [ -z "$ANDROID_KEYSTORE_PASSWORD" ] && [ -z "$ANDROID_KEY_ALIAS" ] && [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "release_signed=false" >> "$GITHUB_OUTPUT"
+          elif [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && [ -n "$ANDROID_KEY_ALIAS" ] && [ -n "$ANDROID_KEY_PASSWORD" ]; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+            echo "release_signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Configure all four Android signing secrets, or remove all four to build the installable debug APK."
+            exit 1
+          fi
 
-      - name: Upload APK as Artifact
+      - name: Build signed release APK
+        if: steps.signing.outputs.release_signed == 'true'
+        env:
+          ANDROID_KEYSTORE_PATH: app/upload-keystore.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: gradle --no-daemon -p android assembleRelease
+
+      - name: Select signed release APK
+        if: steps.signing.outputs.release_signed == 'true'
+        run: echo "apk_path=android/app/build/outputs/apk/release/app-release.apk" >> "$GITHUB_OUTPUT"
+        id: release-apk
+
+      - name: Build installable debug APK
+        if: steps.signing.outputs.release_signed != 'true'
+        run: gradle --no-daemon -p android assembleDebug
+
+      - name: Select debug APK
+        if: steps.signing.outputs.release_signed != 'true'
+        id: debug-apk
+        run: echo "apk_path=android/app/build/outputs/apk/debug/app-debug.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}-${{ github.run_attempt }}
+          name: "StudyMind AI v1.0.${{ github.run_number }}"
+          body: |
+            StudyMind AI Android app by Vipin Pal.
+
+            This APK includes the app's web interface for offline access to built-in study tools. AI features require internet access and a Gemini API key.
+            ${{ steps.signing.outputs.release_signed == 'true' && 'This APK is signed with the configured release upload key.' || 'This APK is signed with the Android debug key. Configure the Android signing secrets before publishing to Google Play.' }}
+          files: ${{ steps.signing.outputs.release_signed == 'true' && steps.release-apk.outputs.apk_path || steps.debug-apk.outputs.apk_path }}
+          fail_on_unmatched_files: true
+
+      - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StudyMindAI-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        with:
-          tag_name: v${{ github.run_number }}
-          name: "StudyMind AI v${{ github.run_number }}"
-          body: |
-            ## 📱 StudyMind AI — BTech Tutor App
-            
-            **Created by Vipin Pal** | BTech CSE Cyber Security Student
-            
-            ### What's included:
-            - AI-powered step-by-step solutions
-            - Maths, Physics, Mechanics, Electronics, CS solver
-            - Image & PDF upload support
-            - Scientific calculator, formula sheets, quiz mode
-            
-            ### Install:
-            Download and install `app-debug.apk` on your Android device.
-            *(Enable "Install from unknown sources" in Settings)*
-          files: android/app/build/outputs/apk/debug/app-debug.apk
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: StudyMindAI-APK
+          path: ${{ steps.signing.outputs.release_signed == 'true' && steps.release-apk.outputs.apk_path || steps.debug-apk.outputs.apk_path }}
+          if-no-files-found: error

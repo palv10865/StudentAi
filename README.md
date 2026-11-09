@@ -10,7 +10,9 @@
 👉 **[https://palv10865.github.io/StudentAi/](https://palv10865.github.io/StudentAi/)**
 
 ## 📱 Download APK
-Download the latest APK from the [Releases](https://github.com/palv10865/StudentAi/releases) tab.
+Download the latest installable APK from [GitHub Releases](https://github.com/palv10865/StudentAi/releases). GitHub Actions builds and publishes a new APK after each push to `main`.
+
+The app's study interface and built-in tools are bundled in the Android app. AI responses, image questions, generated quizzes, and generated flashcards require an internet connection and your own Gemini API key.
 
 ---
 
@@ -30,6 +32,8 @@ Download the latest APK from the [Releases](https://github.com/palv10865/Student
 | ⚡ Logic Gates | Truth tables + gate diagrams |
 | 🎤 Voice Input | Ask questions hands-free |
 | 🌙 Dark/Light Mode | Eye-friendly themes |
+| 🎓 Four-Year Curriculum | Browse typical eight-semester Computer Engineering and CSE Cyber Security subjects |
+| ⬇️ Download Study Sheets | Save formula sheets and generated flashcards as text files on Android or desktop |
 
 ## 📚 Subjects Covered
 - Engineering Mathematics (Calculus, Linear Algebra, Diff. Equations)
@@ -39,12 +43,26 @@ Download the latest APK from the [Releases](https://github.com/palv10865/Student
 - Computer Science (DSA, OS, Networks, DBMS)
 - Cyber Security concepts
 - Chemistry
+- Typical first-year engineering, Computer Engineering, and CSE Cyber Security subjects across all four years
+
+> **Syllabus note:** Mumbai University course names and electives depend on the admission year, college, and syllabus scheme. The in-app curriculum is a study guide, not a substitute for the official syllabus for your batch.
 
 ## 🔑 Setup
 1. Get a free API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 2. Open the website or install the APK
 3. Enter your API key on first launch
 4. Start solving problems!
+
+## 🔏 Android signing
+
+The workflow publishes an installable debug-signed APK by default. For a stable release-signed APK and Google Play upload, create a private upload keystore and add these repository Actions secrets under **Settings → Secrets and variables → Actions**:
+
+- `ANDROID_KEYSTORE_BASE64` — base64-encoded upload keystore
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+
+Never commit or share the keystore or its passwords. Google Play App Signing is enabled in Play Console when setting up the app; the upload key signs submissions, and Google manages the app-signing key. A GitHub release is a direct APK download, not a Play Store listing.
 
 ## 🛠️ Tech Stack
 - Frontend: HTML5, CSS3, JavaScript

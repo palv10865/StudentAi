@@ -6,18 +6,40 @@ android {
     namespace 'com.vipinpal.studymindai'
     compileSdk 34
 
+    def signingEnv = System.getenv()
+    def hasReleaseSigning = [
+        'ANDROID_KEYSTORE_PATH',
+        'ANDROID_KEYSTORE_PASSWORD',
+        'ANDROID_KEY_ALIAS',
+        'ANDROID_KEY_PASSWORD'
+    ].every { signingEnv[it] }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(signingEnv['ANDROID_KEYSTORE_PATH'])
+                storePassword signingEnv['ANDROID_KEYSTORE_PASSWORD']
+                keyAlias signingEnv['ANDROID_KEY_ALIAS']
+                keyPassword signingEnv['ANDROID_KEY_PASSWORD']
+            }
+        }
+    }
+
     defaultConfig {
         applicationId "com.vipinpal.studymindai"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+        versionName "1.0.${System.getenv('GITHUB_RUN_NUMBER') ?: '1'}"
         multiDexEnabled true
     }
 
     buildTypes {
         release {
             minifyEnabled false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -33,6 +55,15 @@ android {
 
     buildFeatures {
         viewBinding true
+    }
+
+    sourceSets {
+        main {
+            assets {
+                srcDir rootProject.file('../')
+                include 'index.html', 'styles.css', 'app.js', 'gemini.js', 'subjects.js', 'tools.js'
+            }
+        }
     }
 }
 

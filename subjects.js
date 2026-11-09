@@ -205,6 +205,75 @@ const SubjectData = {
   }
 };
 
+const CurriculumData = {
+  computerEngineering: {
+    name: 'Computer Engineering',
+    years: [
+      {
+        name: 'Year 1',
+        semesters: [
+          { name: 'Semester 1', subjects: ['Engineering Mathematics I', 'Engineering Physics', 'Engineering Chemistry', 'Engineering Mechanics', 'Basic Electrical and Electronics Engineering', 'Engineering Graphics', 'Programming Fundamentals'] },
+          { name: 'Semester 2', subjects: ['Engineering Mathematics II', 'Engineering Physics II', 'Engineering Chemistry II', 'Structured Programming', 'Workshop Practice', 'Engineering Drawing', 'Communication Skills'] }
+        ]
+      },
+      {
+        name: 'Year 2',
+        semesters: [
+          { name: 'Semester 3', subjects: ['Discrete Mathematics', 'Data Structures', 'Digital Logic Design', 'Object-Oriented Programming', 'Database Management Systems', 'Computer Organization and Architecture'] },
+          { name: 'Semester 4', subjects: ['Applied Mathematics', 'Analysis of Algorithms', 'Computer Networks', 'Operating Systems', 'Microprocessors', 'Software Engineering'] }
+        ]
+      },
+      {
+        name: 'Year 3',
+        semesters: [
+          { name: 'Semester 5', subjects: ['Theory of Computer Science', 'Web Technologies', 'Computer Graphics', 'System Programming and Compiler Construction', 'Artificial Intelligence', 'Department Elective I'] },
+          { name: 'Semester 6', subjects: ['Distributed Systems', 'Machine Learning', 'Data Warehousing and Mining', 'Software Testing and Quality Assurance', 'Department Elective II', 'Mini Project'] }
+        ]
+      },
+      {
+        name: 'Year 4',
+        semesters: [
+          { name: 'Semester 7', subjects: ['Cloud Computing', 'Internet of Things', 'Big Data Analytics', 'Department Elective III', 'Open Elective', 'Project Phase I'] },
+          { name: 'Semester 8', subjects: ['Deep Learning', 'Mobile Computing', 'Entrepreneurship and Management', 'Department Elective IV', 'Open Elective', 'Project Phase II'] }
+        ]
+      }
+    ]
+  },
+  cyberSecurity: {
+    name: 'Computer Science and Engineering (Cyber Security)',
+    years: [
+      {
+        name: 'Year 1',
+        semesters: [
+          { name: 'Semester 1', subjects: ['Engineering Mathematics I', 'Engineering Physics', 'Engineering Chemistry', 'Engineering Mechanics', 'Basic Electrical and Electronics Engineering', 'Engineering Graphics', 'Programming Fundamentals'] },
+          { name: 'Semester 2', subjects: ['Engineering Mathematics II', 'Engineering Physics II', 'Engineering Chemistry II', 'Structured Programming', 'Workshop Practice', 'Engineering Drawing', 'Communication Skills'] }
+        ]
+      },
+      {
+        name: 'Year 2',
+        semesters: [
+          { name: 'Semester 3', subjects: ['Discrete Mathematics', 'Data Structures', 'Digital Logic Design', 'Object-Oriented Programming', 'Database Management Systems', 'Computer Organization and Architecture'] },
+          { name: 'Semester 4', subjects: ['Applied Mathematics', 'Analysis of Algorithms', 'Computer Networks', 'Operating Systems', 'Microprocessors', 'Software Engineering'] }
+        ]
+      },
+      {
+        name: 'Year 3',
+        semesters: [
+          { name: 'Semester 5', subjects: ['Cryptography and Network Security', 'Web Application Security', 'Theory of Computer Science', 'System Programming', 'Ethical Hacking and Penetration Testing', 'Cyber Security Elective I'] },
+          { name: 'Semester 6', subjects: ['Digital Forensics', 'Secure Software Engineering', 'Cloud Security', 'Security Operations and Incident Response', 'Cyber Security Elective II', 'Mini Project'] }
+        ]
+      },
+      {
+        name: 'Year 4',
+        semesters: [
+          { name: 'Semester 7', subjects: ['Malware Analysis and Reverse Engineering', 'Privacy and Data Protection', 'Security Auditing and Risk Management', 'Cyber Security Elective III', 'Open Elective', 'Project Phase I'] },
+          { name: 'Semester 8', subjects: ['Advanced Network Defense', 'IoT and Embedded Systems Security', 'Cyber Law and Governance', 'Cyber Security Elective IV', 'Open Elective', 'Project Phase II'] }
+        ]
+      }
+    ]
+  }
+};
+
 // Unit conversion data
 const UnitData = {
   length: {

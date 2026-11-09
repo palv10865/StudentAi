@@ -985,6 +985,66 @@ body {
   overflow-x: auto;
 }
 
+.curriculum-notice {
+  color: var(--text3);
+  font-size: 12px;
+}
+
+.curriculum-branch {
+  margin-bottom: 32px;
+}
+
+.curriculum-branch-title {
+  margin-bottom: 16px;
+}
+
+.curriculum-year {
+  margin-bottom: 24px;
+}
+
+.curriculum-year-title {
+  margin-bottom: 12px;
+  color: var(--text2);
+}
+
+.curriculum-semesters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.curriculum-semester {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.curriculum-semester h4 {
+  margin-bottom: 10px;
+}
+
+.curriculum-course-list {
+  display: grid;
+  gap: 6px;
+}
+
+.curriculum-course {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--surface2);
+  color: var(--text2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.curriculum-course:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+
 /* ---- Unit Converter ---- */
 .converter-wrapper {
   max-width: 600px;

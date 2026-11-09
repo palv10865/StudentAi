@@ -167,6 +167,7 @@ const App = {
 
     // Section-specific init
     if (section === 'formulas') this.renderFormulas();
+    if (section === 'curriculum') this.renderCurriculum();
     if (section === 'periodic') this.renderPeriodicTable();
     if (section === 'converter') this.initConverter();
     if (section === 'logic') this.renderLogicGate();
@@ -675,6 +676,46 @@ const App = {
     this.showFormulaSubject(subjectKeys[0], container.querySelector('.formula-tab'));
   },
 
+  renderCurriculum() {
+    const container = document.getElementById('curriculum-content');
+    if (!container) return;
+
+    container.innerHTML = Object.entries(CurriculumData).map(([branchKey, branch]) => `
+      <section class="curriculum-branch">
+        <h3 class="curriculum-branch-title">${this.escapeHtml(branch.name)}</h3>
+        ${branch.years.map(year => `
+          <div class="curriculum-year">
+            <h4 class="curriculum-year-title">${this.escapeHtml(year.name)}</h4>
+            <div class="curriculum-semesters">
+              ${year.semesters.map(semester => `
+                <article class="curriculum-semester">
+                  <h4>${this.escapeHtml(semester.name)}</h4>
+                  <div class="curriculum-course-list">
+                    ${semester.subjects.map(course => `
+                      <button class="curriculum-course" onclick="App.startCurriculumCourse(${JSON.stringify(course)}, ${JSON.stringify(branch.name)})">
+                        ${this.escapeHtml(course)} <span aria-hidden="true">→</span>
+                      </button>
+                    `).join('')}
+                  </div>
+                </article>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </section>
+    `).join('');
+  },
+
+  startCurriculumCourse(course, branch) {
+    const input = document.getElementById('chat-input');
+    this.showSection('chat');
+    if (input) {
+      input.value = `I'm studying ${course} in ${branch}. Explain the key Mumbai University exam topics and show a step-by-step worked example.`;
+      input.focus();
+      this.autoResize({ target: input });
+    }
+  },
+
   showFormulaSubject(subjectKey, btn) {
     document.querySelectorAll('.formula-tab').forEach(t => t.classList.remove('active'));
     if (btn) btn.classList.add('active');
@@ -684,7 +725,9 @@ const App = {
     const display = document.getElementById('formula-display');
     if (!display) return;
 
-    let html = '';
+    let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+      <button class="btn btn-secondary" onclick="App.downloadFormulaSheet('${subjectKey}')">⬇️ Download ${this.escapeHtml(data.name)} Formula Sheet</button>
+    </div>`;
     for (const cat of data.formulas) {
       html += `<div class="formula-category">
         <h3 class="formula-cat-title">📐 ${cat.category}</h3>
@@ -714,8 +757,55 @@ const App = {
   },
 
   copyFormula(formula) {
-    navigator.clipboard.writeText(`$$${formula}$$`);
-    showToast('Formula copied as LaTeX!');
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(`$$${formula}$$`).then(
+        () => showToast('Formula copied as LaTeX!'),
+        () => showToast('Could not access the clipboard. You can still select the formula.', 'error')
+      );
+    } else {
+      showToast('Clipboard access is unavailable in this browser.', 'error');
+    }
+  },
+
+  downloadFormulaSheet(subjectKey) {
+    const data = SubjectData[subjectKey];
+    if (!data) {
+      showToast('Formula sheet not found.', 'error');
+      return;
+    }
+    const lines = [`${data.name} Formula Sheet`, 'Created with StudyMind AI', ''];
+    data.formulas.forEach(category => {
+      lines.push(category.category);
+      category.items.forEach(item => lines.push(`${item.name}: ${item.formula}`));
+      lines.push('');
+    });
+    this.downloadTextFile(`${subjectKey}-formula-sheet.txt`, lines.join('\n'));
+  },
+
+  downloadFlashcards() {
+    if (!this.currentFlashcards.length) {
+      showToast('Generate flashcards before downloading.', 'error');
+      return;
+    }
+    const topic = document.getElementById('flashcard-topic')?.value.trim() || 'study';
+    const safeTopic = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'study';
+    const content = this.currentFlashcards.map((card, index) =>
+      `${index + 1}. ${card.front}\nAnswer: ${card.back}`
+    ).join('\n\n');
+    this.downloadTextFile(`${safeTopic}-flashcards.txt`, `StudyMind AI Flashcards: ${topic}\n\n${content}`);
+  },
+
+  downloadTextFile(filename, content) {
+    if (window.AndroidDownload && typeof window.AndroidDownload.saveTextFile === 'function') {
+      window.AndroidDownload.saveTextFile(filename, content);
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
 
   // ============ UNIT CONVERTER ============
@@ -808,16 +898,19 @@ const App = {
 
     container.innerHTML = `
       <div class="flashcard-counter">${this.currentFlashcardIndex + 1} / ${total}</div>
+      <div style="display:flex;justify-content:center;margin-bottom:12px;">
+        <button class="btn btn-secondary" onclick="App.downloadFlashcards()">⬇️ Download Flashcards</button>
+      </div>
       <div class="flashcard" id="fc-card" onclick="this.classList.toggle('flipped')">
         <div class="flashcard-inner">
           <div class="flashcard-front">
             <div class="fc-label">Question</div>
-            <div class="fc-content">${card.front}</div>
+            <div class="fc-content">${this.escapeHtml(card.front || '')}</div>
             <div class="fc-hint">Click to reveal answer</div>
           </div>
           <div class="flashcard-back">
             <div class="fc-label">Answer</div>
-            <div class="fc-content">${card.back}</div>
+            <div class="fc-content">${this.escapeHtml(card.back || '')}</div>
           </div>
         </div>
       </div>
