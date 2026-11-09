@@ -9,6 +9,8 @@
 ## 🌐 Live Website
 👉 **[https://palv10865.github.io/StudentAi/](https://palv10865.github.io/StudentAi/)**
 
+To enable or update the Pages deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**, then run the **Deploy to GitHub Pages** workflow manually from the Actions tab.
+
 ## 📱 Download APK
 Download the latest installable APK from [GitHub Releases](https://github.com/palv10865/StudentAi/releases). GitHub Actions builds and publishes a new APK after each push to `main`.
 

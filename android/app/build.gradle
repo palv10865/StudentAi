@@ -29,8 +29,9 @@ android {
         applicationId "com.vipinpal.studymindai"
         minSdk 24
         targetSdk 34
-        versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
-        versionName "1.0.${System.getenv('GITHUB_RUN_NUMBER') ?: '1'}"
+        def appVersionCode = project.findProperty('appVersionCode')?.toString()?.toInteger() ?: 1
+        versionCode appVersionCode
+        versionName "1.0.${appVersionCode}"
         multiDexEnabled true
     }
 
