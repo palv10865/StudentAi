@@ -103,9 +103,15 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}-${{ github.run_attempt }}
           name: "StudyMind AI v1.0.${{ github.run_number }}"
           body: |
-            StudyMind AI Android app by Vipin Pal.
+            StudyMind AI Android app by Vipin Pal, built from commit ${{ github.sha }}.
 
-            This APK includes the app's web interface for offline access to built-in study tools. AI features require internet access and a Gemini API key.
+            Included in this build:
+            - Persistent on-device chat history and optional study memory
+            - Offline-bundled study tools and browser libraries
+            - Fixed Android WebView asset packaging and verified app entry page
+            - Updated tutor, study tools, and local API-key handling
+
+            AI answers require internet access and a Gemini API key. Conversation history, study memory, and the key are stored locally on the device and are not synced.
             ${{ steps.signing.outputs.release_signed == 'true' && 'This APK is signed with the configured release upload key.' || 'This APK is signed with the Android debug key. Configure the Android signing secrets before publishing to Google Play.' }}
           files: StudyMindAI.apk
           fail_on_unmatched_files: true
