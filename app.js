@@ -2,6 +2,9 @@
 const App = {
   currentSection: 'chat',
   chatHistory: [],
+  chatSessions: [],
+  activeChatId: null,
+  chatStorageAvailable: true,
   questionHistory: [],
   currentSubject: 'general',
   currentImage: null,
@@ -20,6 +23,7 @@ const App = {
 
   init() {
     this.loadSettings();
+    this.loadSavedConversations();
     this.setupEventListeners();
     this.setupSpeechRecognition();
     GeminiAPI.init();
@@ -204,7 +208,12 @@ const App = {
     input.style.height = 'auto';
 
     // Add to history
-    this.chatHistory.push({ role: 'user', content: userMessage });
+    this.chatHistory.push({
+      role: 'user',
+      content: userMessage,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
+    this.persistConversation();
     this.questionHistory.unshift({ question: userMessage, time: new Date().toLocaleTimeString(), subject: this.currentSubject });
     if (this.questionHistory.length > 50) this.questionHistory.pop();
     localStorage.setItem('question_history', JSON.stringify(this.questionHistory));
@@ -237,7 +246,12 @@ const App = {
       );
 
       this.removeTyping(typingId);
-      this.chatHistory.push({ role: 'assistant', content: fullResponse });
+      this.chatHistory.push({
+        role: 'assistant',
+        content: fullResponse,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      this.persistConversation();
 
       // Post-process: render math, code, etc.
       this.postProcessMessage(msgEl, fullResponse);
@@ -256,14 +270,14 @@ const App = {
     this.scrollToBottom();
   },
 
-  appendMessage(role, content, imageData = null) {
+  appendMessage(role, content, imageData = null, messageTime = null) {
     const container = document.getElementById('chat-messages');
     if (!container) return;
 
     const div = document.createElement('div');
     div.className = `message ${role}-message`;
 
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const time = messageTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     if (role === 'user') {
       let imgHtml = '';
@@ -281,7 +295,7 @@ const App = {
       div.innerHTML = `
         <div class="message-avatar">⚠️</div>
         <div class="message-body">
-          <div class="message-text error-text">${content}</div>
+          <div class="message-text error-text">${this.escapeHtml(content)}</div>
           <div class="message-time">${time}</div>
         </div>`;
     } else {
@@ -331,15 +345,18 @@ const App = {
   },
 
   renderMarkdown(text) {
+    let html;
     if (typeof marked !== 'undefined') {
-      return marked.parse(text);
+      html = marked.parse(text);
+    } else {
+      const escapedText = this.escapeHtml(text);
+      html = escapedText
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
     }
-    // Fallback basic markdown
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code>$1</code>')
-      .replace(/\n/g, '<br>');
+    return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : this.escapeHtml(text);
   },
 
   renderMath(el) {
@@ -466,11 +483,19 @@ const App = {
   },
 
   clearChat() {
-    document.getElementById('chat-messages').innerHTML = '';
+    this.startNewChat();
+  },
+
+  startNewChat() {
+    this.activeChatId = null;
     this.chatHistory = [];
+    localStorage.removeItem('active_chat_id');
+    document.getElementById('chat-messages').innerHTML = '';
     document.getElementById('related-topics').style.display = 'none';
     this.appendWelcomeMessage();
-    showToast('Chat cleared');
+    this.renderHistory();
+    this.showSection('chat');
+    showToast('New chat started. Saved conversations are kept in History.');
   },
 
   appendWelcomeMessage() {
@@ -1323,25 +1348,233 @@ const App = {
   },
 
   // ============ HISTORY ============
+  loadSavedConversations() {
+    const saved = localStorage.getItem('chat_sessions');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed) || parsed.some(session =>
+          !session || typeof session.id !== 'string' || !/^[A-Za-z0-9-]+$/.test(session.id)
+          || typeof session.title !== 'string'
+          || !Array.isArray(session.messages) || session.messages.some(message =>
+            !message || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string'
+          )
+        )) {
+          throw new Error('Saved conversations have an invalid format.');
+        }
+        this.chatSessions = parsed;
+      } catch (error) {
+        this.chatStorageAvailable = false;
+        console.error('Unable to load saved conversations:', error);
+        showToast('Saved chat history could not be read. Existing data was left untouched.', 'error');
+      }
+    }
+
+    const savedActiveId = localStorage.getItem('active_chat_id');
+    const activeSession = this.chatSessions.find(session => session.id === savedActiveId);
+    if (activeSession) {
+      this.activeChatId = activeSession.id;
+      if (SubjectData[activeSession.subject]) {
+        this.currentSubject = activeSession.subject;
+        localStorage.setItem('subject', this.currentSubject);
+        this.renderSubjectSelector();
+      }
+      this.chatHistory = activeSession.messages.map(message => ({
+        role: message.role,
+        content: message.content,
+        time: message.time
+      }));
+      this.renderSavedConversation(activeSession);
+    }
+  },
+
+  persistConversation() {
+    if (!this.chatStorageAvailable || this.chatHistory.length === 0) return;
+
+    const now = new Date().toISOString();
+    const existing = this.chatSessions.find(session => session.id === this.activeChatId);
+    const firstQuestion = this.chatHistory.find(message => message.role === 'user')?.content || 'New conversation';
+    const session = {
+      id: this.activeChatId || crypto.randomUUID(),
+      title: firstQuestion.slice(0, 80),
+      subject: this.currentSubject,
+      updatedAt: now,
+      messages: this.chatHistory.map(message => ({
+        role: message.role,
+        content: message.content,
+        time: message.time || new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }))
+    };
+
+    if (existing) {
+      Object.assign(existing, session);
+    } else {
+      this.chatSessions.unshift(session);
+    }
+    this.activeChatId = session.id;
+    if (SubjectData[session.subject]) {
+      this.currentSubject = session.subject;
+      localStorage.setItem('subject', this.currentSubject);
+      this.renderSubjectSelector();
+    }
+    this.chatSessions.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+
+    try {
+      localStorage.setItem('chat_sessions', JSON.stringify(this.chatSessions));
+      localStorage.setItem('active_chat_id', this.activeChatId);
+      this.renderHistory();
+    } catch (error) {
+      this.chatStorageAvailable = false;
+      console.error('Unable to save conversation:', error);
+      showToast('This device is out of storage. Export or remove saved chats to continue saving history.', 'error');
+    }
+  },
+
+  renderSavedConversation(session) {
+    const messages = document.getElementById('chat-messages');
+    if (!messages) return;
+    messages.innerHTML = '';
+    document.getElementById('related-topics').style.display = 'none';
+    if (!session.messages.length) {
+      this.appendWelcomeMessage();
+      return;
+    }
+    session.messages.forEach(message => {
+      const element = this.appendMessage(message.role, message.content, null, message.time);
+      if (message.role === 'assistant') this.postProcessMessage(element, message.content);
+    });
+    this.scrollToBottom();
+  },
+
+  openConversation(id) {
+    const session = this.chatSessions.find(item => item.id === id);
+    if (!session) {
+      showToast('That saved conversation is no longer available.', 'error');
+      return;
+    }
+    this.activeChatId = session.id;
+    this.chatHistory = session.messages.map(message => ({
+      role: message.role,
+      content: message.content,
+      time: message.time
+    }));
+    localStorage.setItem('active_chat_id', session.id);
+    this.renderSavedConversation(session);
+    this.showSection('chat');
+  },
+
+  deleteConversation(id) {
+    if (!confirm('Delete this saved conversation from this device? This cannot be undone.')) return;
+    this.chatSessions = this.chatSessions.filter(session => session.id !== id);
+    try {
+      localStorage.setItem('chat_sessions', JSON.stringify(this.chatSessions));
+      if (this.activeChatId === id) {
+        this.activeChatId = null;
+        this.chatHistory = [];
+        localStorage.removeItem('active_chat_id');
+        const messages = document.getElementById('chat-messages');
+        if (messages) messages.innerHTML = '';
+        this.appendWelcomeMessage();
+      }
+      this.renderHistory();
+      showToast('Conversation deleted.');
+    } catch (error) {
+      console.error('Unable to update saved conversations:', error);
+      showToast('Could not update saved conversations on this device.', 'error');
+    }
+  },
+
+  clearSavedConversations() {
+    if (!confirm('Delete all saved conversations from this device? This cannot be undone.')) return;
+    this.chatSessions = [];
+    this.chatHistory = [];
+    this.activeChatId = null;
+    localStorage.removeItem('chat_sessions');
+    localStorage.removeItem('active_chat_id');
+    const messages = document.getElementById('chat-messages');
+    if (messages) messages.innerHTML = '';
+    this.appendWelcomeMessage();
+    this.renderHistory();
+    showToast('Saved conversations deleted.');
+  },
+
   renderHistory() {
     const saved = localStorage.getItem('question_history');
-    if (saved) this.questionHistory = JSON.parse(saved);
+    if (saved) {
+      try {
+        this.questionHistory = JSON.parse(saved);
+      } catch (error) {
+        console.error('Unable to load recent question history:', error);
+      }
+    }
+
+    this.chatSessions.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+    const sessionsContainer = document.getElementById('chat-sessions-list');
+    if (sessionsContainer) {
+      sessionsContainer.replaceChildren();
+      if (this.chatSessions.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'history-empty';
+        empty.textContent = 'No saved conversations yet';
+        sessionsContainer.appendChild(empty);
+      } else {
+        this.chatSessions.forEach(session => {
+          const item = document.createElement('div');
+          item.className = 'history-item conversation-item';
+
+          const openButton = document.createElement('button');
+          openButton.className = 'conversation-open';
+          openButton.type = 'button';
+          const title = document.createElement('div');
+          title.className = 'history-q';
+          title.textContent = session.title || 'Conversation';
+          const meta = document.createElement('div');
+          meta.className = 'history-meta';
+          const updatedAt = new Date(session.updatedAt);
+          meta.textContent = `${session.subject || 'general'} · ${Number.isNaN(updatedAt.valueOf()) ? '' : updatedAt.toLocaleString()}`;
+          openButton.append(title, meta);
+          openButton.addEventListener('click', () => this.openConversation(session.id));
+
+          const deleteButton = document.createElement('button');
+          deleteButton.className = 'conversation-delete';
+          deleteButton.type = 'button';
+          deleteButton.textContent = '✕';
+          deleteButton.setAttribute('aria-label', 'Delete conversation');
+          deleteButton.addEventListener('click', () => this.deleteConversation(session.id));
+          item.append(openButton, deleteButton);
+          sessionsContainer.appendChild(item);
+        });
+      }
+    }
 
     const container = document.getElementById('history-list');
     if (!container) return;
+    container.replaceChildren();
     if (this.questionHistory.length === 0) {
-      container.innerHTML = '<div class="history-empty">No history yet</div>';
+      const empty = document.createElement('div');
+      empty.className = 'history-empty';
+      empty.textContent = 'No recent questions';
+      container.appendChild(empty);
       return;
     }
-    container.innerHTML = this.questionHistory.slice(0, 20).map((item, i) => `
-      <div class="history-item" onclick="App.loadFromHistory('${encodeURIComponent(item.question)}')">
-        <div class="history-q">${this.escapeHtml(item.question.substring(0, 60))}${item.question.length > 60 ? '...' : ''}</div>
-        <div class="history-meta">${item.subject || 'general'} • ${item.time}</div>
-      </div>`).join('');
+    this.questionHistory.slice(0, 20).forEach(item => {
+      const question = typeof item.question === 'string' ? item.question : '';
+      const entry = document.createElement('button');
+      entry.className = 'history-item recent-question-item';
+      entry.type = 'button';
+      const title = document.createElement('div');
+      title.className = 'history-q';
+      title.textContent = `${question.substring(0, 60)}${question.length > 60 ? '...' : ''}`;
+      const meta = document.createElement('div');
+      meta.className = 'history-meta';
+      meta.textContent = `${item.subject || 'general'} · ${item.time || ''}`;
+      entry.append(title, meta);
+      entry.addEventListener('click', () => this.loadFromHistory(question));
+      container.appendChild(entry);
+    });
   },
 
-  loadFromHistory(encoded) {
-    const question = decodeURIComponent(encoded);
+  loadFromHistory(question) {
     document.getElementById('chat-input').value = question;
     this.showSection('chat');
     document.getElementById('chat-input').focus();
@@ -1358,6 +1591,7 @@ const App = {
   saveSettings() {
     const apiKey = document.getElementById('settings-api-key')?.value.trim();
     const model = document.getElementById('settings-model')?.value;
+    const studyMemory = document.getElementById('study-memory')?.value.trim() || '';
 
     if (apiKey) {
       localStorage.setItem('gemini_api_key', apiKey);
@@ -1365,14 +1599,29 @@ const App = {
     if (model) {
       GeminiAPI.setModel(model);
     }
-    showToast('Settings saved!', 'success');
+    try {
+      localStorage.setItem('study_memory', studyMemory);
+      showToast('Settings and study memory saved on this device.', 'success');
+    } catch (error) {
+      console.error('Unable to save study memory:', error);
+      showToast('Could not save settings. This device may be out of storage.', 'error');
+    }
   },
 
   loadSettingsForm() {
     const apiKeyEl = document.getElementById('settings-api-key');
     const modelEl = document.getElementById('settings-model');
+    const memoryEl = document.getElementById('study-memory');
     if (apiKeyEl) apiKeyEl.value = localStorage.getItem('gemini_api_key') || '';
     if (modelEl) modelEl.value = GeminiAPI.model;
+    if (memoryEl) memoryEl.value = localStorage.getItem('study_memory') || '';
+  },
+
+  clearStudyMemory() {
+    localStorage.removeItem('study_memory');
+    const memoryEl = document.getElementById('study-memory');
+    if (memoryEl) memoryEl.value = '';
+    showToast('Saved study memory removed from this device.');
   },
 
   // ============ UTILITIES ============
@@ -1406,7 +1655,7 @@ function showToast(message, type = 'info') {
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   App.init();
-  App.appendWelcomeMessage();
+  if (!App.chatHistory.length) App.appendWelcomeMessage();
   App.loadSettingsForm();
 
   // Init converter

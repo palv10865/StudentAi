@@ -6,27 +6,20 @@
   <title>StudyMind AI — BTech Tutor</title>
   <meta name="description" content="AI-powered tutor for BTech students covering Maths, Physics, Mechanics, Electronics, CS and more.">
 
-  <!-- KaTeX for Math Rendering -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
-    onload="if(typeof App !== 'undefined' && App.init) {}"></script>
-
-  <!-- Marked.js for Markdown -->
-  <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
-
-  <!-- Highlight.js for Code Syntax Highlighting -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
-  <!-- Chart.js for Graphing -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-  <!-- PDF.js for PDF parsing -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-  <!-- html2canvas for Export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="vendor/highlight.js/atom-one-dark.min.css">
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/auto-render.min.js"></script>
+  <script src="vendor/marked/marked.umd.js"></script>
+  <script src="vendor/dompurify/purify.min.js"></script>
+  <script src="vendor/highlight.js/highlight.min.js"></script>
+  <script src="vendor/chart.js/chart.umd.js"></script>
+  <script src="vendor/html2canvas/html2canvas.min.js"></script>
+  <script type="module">
+    import * as pdfjsLib from './vendor/pdfjs/pdf.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdfjs/pdf.worker.min.js', import.meta.url).toString();
+    window.pdfjsLib = pdfjsLib;
+  </script>
 
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -147,7 +140,7 @@
       <button class="icon-btn" onclick="App.toggleSidebar()" title="Toggle sidebar">☰</button>
       <span class="header-title" id="header-title">AI Chat — BTech Tutor</span>
       <div class="header-actions">
-        <button class="icon-btn" onclick="App.clearChat()" title="Clear chat" id="clear-btn">🗑️</button>
+        <button class="icon-btn" onclick="App.startNewChat()" title="Start a new chat" id="clear-btn">✚</button>
         <button class="icon-btn" id="tts-btn" title="Text to Speech">🔊</button>
         <button class="icon-btn" onclick="App.toggleTheme()" id="theme-toggle" title="Toggle theme">
           <span id="theme-icon">☀️</span>
@@ -197,12 +190,21 @@
     <!-- ============ HISTORY SECTION ============ -->
     <section id="history-section" class="section">
       <div class="section-header">
-        <h2>🕐 Question History</h2>
-        <p>Your recent questions and sessions</p>
+        <h2>🕐 Chat History</h2>
+        <p>Text conversations stay on this device until you delete them. They are not synced; uploaded images and PDFs are not saved.</p>
       </div>
       <div class="section-inner">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-          <button class="btn btn-danger" onclick="App.clearHistory()">🗑️ Clear History</button>
+        <div class="history-toolbar">
+          <h3>Saved conversations</h3>
+          <div class="history-toolbar-actions">
+            <button class="btn btn-primary" onclick="App.startNewChat()">＋ New chat</button>
+            <button class="btn btn-danger" onclick="App.clearSavedConversations()">Delete all chats</button>
+          </div>
+        </div>
+        <div class="history-list" id="chat-sessions-list"></div>
+        <div class="history-toolbar recent-history-toolbar">
+          <h3>Recent questions</h3>
+          <button class="btn btn-danger" onclick="App.clearHistory()">🗑️ Clear recent questions</button>
         </div>
         <div class="history-list" id="history-list"></div>
       </div>
@@ -660,6 +662,14 @@ Newton's Laws of Motion:
             </select>
           </div>
 
+          <div class="settings-section-title">🧠 Study Memory</div>
+          <div class="settings-row">
+            <label for="study-memory">Notes for future AI chats</label>
+            <textarea id="study-memory" class="form-input" rows="4" maxlength="3000" placeholder="For example: I prefer concise explanations, and I am studying second-year Computer Engineering."></textarea>
+            <p>This optional note is stored only on this device and included in AI prompts. Do not save sensitive personal information. It is not synced between devices.</p>
+            <button class="btn btn-secondary" onclick="App.clearStudyMemory()">Clear study memory</button>
+          </div>
+
           <div class="settings-section-title">🎨 Appearance</div>
           <div class="settings-row">
             <label>Theme</label>
@@ -701,7 +711,7 @@ Newton's Laws of Motion:
 <div class="modal-overlay" id="api-key-modal">
   <div class="modal">
     <h2>🔑 Setup Your API Key</h2>
-    <p>To use StudyMind AI, you need a free Google Gemini API key. Your key is stored locally and never sent to any server other than Google's.</p>
+    <p>To use AI features, add a Gemini API key. It is stored on this device and sent directly to Google. Anyone with access to this app or device may be able to access it; use a personal key and restrict it in Google AI Studio where available.</p>
     <div class="settings-row">
       <label style="font-size:13px;font-weight:500;">Gemini API Key</label>
       <input type="password" id="modal-api-key" class="form-input" placeholder="AIza...">
@@ -731,11 +741,6 @@ Newton's Laws of Motion:
 
 <!-- ============ SCRIPTS ============ -->
 <script>
-  // Configure PDF.js worker
-  if (typeof pdfjsLib !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  }
-
   // Configure marked.js
   if (typeof marked !== 'undefined') {
     marked.setOptions({

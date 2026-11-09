@@ -1749,6 +1749,67 @@ body {
   transition: all var(--transition);
 }
 
+.history-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.history-toolbar h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.history-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.recent-history-toolbar {
+  margin-top: 28px;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.conversation-open {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recent-question-item {
+  width: 100%;
+  font-family: inherit;
+}
+
+.conversation-delete {
+  border: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+}
+
+.conversation-delete:hover {
+  background: rgba(214,48,49,0.12);
+  color: var(--error);
+}
+
 .history-item:hover {
   border-color: var(--primary);
   background: rgba(108,99,255,0.05);

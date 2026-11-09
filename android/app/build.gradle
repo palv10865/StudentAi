@@ -2,11 +2,15 @@ plugins {
     id 'com.android.application'
 }
 
+def webAssetsDirectory = layout.buildDirectory.dir('generated/web-assets')
 def prepareWebAssets = tasks.register('prepareWebAssets', Copy) {
     from(rootProject.file('../')) {
         include 'index.html', 'styles.css', 'app.js', 'gemini.js', 'subjects.js', 'tools.js'
     }
-    into(layout.buildDirectory.dir('generated/web-assets'))
+    from(rootProject.file('../vendor')) {
+        into 'vendor'
+    }
+    into(webAssetsDirectory)
 }
 
 android {
@@ -67,9 +71,13 @@ android {
 
     sourceSets {
         main {
-            assets.srcDir(prepareWebAssets)
+            assets.srcDir(webAssetsDirectory)
         }
     }
+}
+
+tasks.named('preBuild').configure {
+    dependsOn(prepareWebAssets)
 }
 
 dependencies {

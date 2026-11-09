@@ -73,6 +73,11 @@ jobs:
         id: debug-apk
         run: echo "apk_path=android/app/build/outputs/apk/debug/app-debug.apk" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare consistent APK download name
+        env:
+          APK_PATH: ${{ steps.signing.outputs.release_signed == 'true' && steps.release-apk.outputs.apk_path || steps.debug-apk.outputs.apk_path }}
+        run: cp "$APK_PATH" StudyMindAI.apk
+
       - name: Verify installable APK package
         env:
           APK_PATH: ${{ steps.signing.outputs.release_signed == 'true' && steps.release-apk.outputs.apk_path || steps.debug-apk.outputs.apk_path }}
@@ -80,7 +85,12 @@ jobs:
           test -s "$APK_PATH"
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK_PATH"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK_PATH" | grep -q "package: name='com.vipinpal.studymindai"
-          for asset in index.html styles.css app.js gemini.js subjects.js tools.js; do
+          for asset in index.html styles.css app.js gemini.js subjects.js tools.js \
+            vendor/katex/katex.min.js vendor/katex/katex.min.css \
+            vendor/marked/marked.umd.js vendor/dompurify/purify.min.js \
+            vendor/highlight.js/highlight.min.js vendor/chart.js/chart.umd.js \
+            vendor/html2canvas/html2canvas.min.js vendor/pdfjs/pdf.min.js \
+            vendor/pdfjs/pdf.worker.min.js; do
             unzip -Z1 "$APK_PATH" | grep -qx "assets/$asset" || {
               echo "Missing bundled app asset: $asset"
               exit 1
@@ -97,12 +107,12 @@ jobs:
 
             This APK includes the app's web interface for offline access to built-in study tools. AI features require internet access and a Gemini API key.
             ${{ steps.signing.outputs.release_signed == 'true' && 'This APK is signed with the configured release upload key.' || 'This APK is signed with the Android debug key. Configure the Android signing secrets before publishing to Google Play.' }}
-          files: ${{ steps.signing.outputs.release_signed == 'true' && steps.release-apk.outputs.apk_path || steps.debug-apk.outputs.apk_path }}
+          files: StudyMindAI.apk
           fail_on_unmatched_files: true
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: StudyMindAI-APK
-          path: ${{ steps.signing.outputs.release_signed == 'true' && steps.release-apk.outputs.apk_path || steps.debug-apk.outputs.apk_path }}
+          path: StudyMindAI.apk
           if-no-files-found: error

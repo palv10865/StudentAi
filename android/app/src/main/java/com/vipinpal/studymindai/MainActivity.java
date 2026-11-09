@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int DOWNLOAD_FILE_REQUEST_CODE = 3;
     private static final String APP_ASSET_HOST = "appassets.androidplatform.net";
     private String pendingDownloadContent;
+    private PermissionRequest pendingAudioPermissionRequest;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -66,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
             2500
         );
 
-        requestPermissions();
         setupWebView();
 
         if (savedInstanceState != null) {
@@ -84,14 +85,14 @@ public class MainActivity extends AppCompatActivity {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-        settings.setAllowFileAccess(true);
+        settings.setDatabaseEnabled(false);
+        settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setBuiltInZoomControls(false);
         settings.setSupportZoom(false);
-        settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setUserAgentString(
@@ -164,7 +165,29 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onPermissionRequest(PermissionRequest request) {
-                request.grant(request.getResources());
+                String[] resources = request.getResources();
+                if (!APP_ASSET_HOST.equals(request.getOrigin().getHost())
+                        || resources.length != 1
+                        || !PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[0])) {
+                    request.deny();
+                    return;
+                }
+
+                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    request.grant(resources);
+                    return;
+                }
+
+                if (pendingAudioPermissionRequest != null) {
+                    request.deny();
+                    return;
+                }
+                pendingAudioPermissionRequest = request;
+                ActivityCompat.requestPermissions(
+                    MainActivity.this,
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    PERMISSION_REQUEST_CODE
+                );
             }
 
             @Override
@@ -176,19 +199,22 @@ public class MainActivity extends AppCompatActivity {
         WebView.setWebContentsDebuggingEnabled(false);
     }
 
-    private void requestPermissions() {
-        String[] permissions = {
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO,
-        };
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions = new String[]{
-                Manifest.permission.CAMERA,
-                Manifest.permission.RECORD_AUDIO,
-                Manifest.permission.READ_MEDIA_IMAGES,
-            };
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != PERMISSION_REQUEST_CODE) return;
+
+        PermissionRequest request = pendingAudioPermissionRequest;
+        pendingAudioPermissionRequest = null;
+        if (request == null) return;
+
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+        } else {
+            request.deny();
         }
-        ActivityCompat.requestPermissions(this, permissions, PERMISSION_REQUEST_CODE);
     }
 
     @Override
