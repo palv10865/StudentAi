@@ -12,7 +12,7 @@
 To enable or update the Pages deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**, then run the **Deploy to GitHub Pages** workflow manually from the Actions tab.
 
 ## 📱 Download APK
-Download the latest installable APK from [GitHub Releases](https://github.com/palv10865/StudentAi/releases). GitHub Actions builds and publishes a new APK after each push to `main`.
+Download the latest installable APK from [GitHub Releases](https://github.com/palv10865/StudentAi/releases/latest). GitHub Actions builds and publishes a new APK after each push to `main`.
 
 The app's study interface and built-in tools are bundled in the Android app. AI responses, image questions, generated quizzes, and generated flashcards require an internet connection and your own Gemini API key.
 
