@@ -7,6 +7,7 @@ An Android and web study assistant for engineering students, created by Vipin Pa
 - [Download the latest Android APK](https://github.com/palv10865/StudentAi/releases/latest/download/StudyMindAI.apk)
 - [Browse all APK releases](https://github.com/palv10865/StudentAi/releases)
 - [Open the GitHub Pages site](https://palv10865.github.io/StudentAi/)
+- [View the GitHub Actions build and deployment history](https://github.com/palv10865/StudentAi/actions)
 
 If the website is unavailable, enable **Settings → Pages → Build and deployment → Source: GitHub Actions** in the repository. Pushes to `main` deploy automatically; if you enable Pages after an earlier failed run, choose **Actions → Deploy to GitHub Pages → Run workflow** once.
 
@@ -42,6 +43,8 @@ The vendored browser libraries and their licenses are copied into `vendor/` for 
 ```powershell
 gradle --no-daemon -p android assembleDebug
 ```
+
+Pinned browser libraries: Chart.js 4.4.0, DOMPurify 3.4.17, Highlight.js CDN assets 11.12.0, html2canvas 1.4.1, KaTeX 0.19.1, Marked 9.1.6, and PDF.js 4.10.38. Versions are locked in `package-lock.json`; update dependencies deliberately, regenerate `vendor/`, and run the APK workflow to verify packaging.
 
 ## Curriculum coverage
 
