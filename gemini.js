@@ -1,6 +1,24 @@
 // Gemini API Integration Module
 const GeminiAPI = {
-  baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+  model: 'gemini-3.8-flash',
+  baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
+
+  init() {
+    const savedModel = localStorage.getItem('gemini_model');
+    const supportedModels = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+    const model = supportedModels.includes(savedModel) ? savedModel : this.model;
+    this.setModel(model);
+  },
+
+  setModel(model) {
+    const supportedModels = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+    if (!supportedModels.includes(model)) {
+      throw new Error('Select a supported Gemini model.');
+    }
+    this.model = model;
+    this.baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    localStorage.setItem('gemini_model', model);
+  },
   
   getApiKey() {
     return localStorage.getItem('gemini_api_key') || '';
@@ -119,7 +137,7 @@ Instructions:
       throw new Error('No API key set. Please add your Gemini API key in Settings.');
     }
 
-    const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+    const streamUrl = `${this.baseUrl.replace(/:generateContent$/, ':streamGenerateContent')}?alt=sse&key=${encodeURIComponent(apiKey)}`;
     
     const contents = [];
     for (let i = 0; i < messages.length - 1; i++) {

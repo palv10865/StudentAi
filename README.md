@@ -12,7 +12,11 @@
 To enable or update the Pages deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**, then run the **Deploy to GitHub Pages** workflow manually from the Actions tab.
 
 ## 📱 Download APK
-Download the latest installable APK from [GitHub Releases](https://github.com/palv10865/StudentAi/releases/latest). GitHub Actions builds and publishes a new APK after each push to `main`.
+**Latest APK:** [Download StudyMind AI for Android](https://github.com/palv10865/StudentAi/releases/latest/download/app-debug.apk)
+
+**Release and version history:** [GitHub Releases](https://github.com/palv10865/StudentAi/releases)
+
+GitHub Actions builds and publishes an APK after each push to `main`. The APK is signed with the Android debug key unless release signing secrets are configured.
 
 The app's study interface and built-in tools are bundled in the Android app. AI responses, image questions, generated quizzes, and generated flashcards require an internet connection and your own Gemini API key.
 
@@ -22,7 +26,7 @@ The app's study interface and built-in tools are bundled in the Android app. AI 
 
 | Feature | Description |
 |---------|-------------|
-| 🤖 AI Chat | Gemini 2.0 Flash with step-by-step solutions |
+| 🤖 AI Chat | Gemini 3.8 Flash with step-by-step solutions |
 | 📸 Image Upload | Solve from photos of handwritten/printed problems |
 | 📄 PDF Parser | Extract & solve problems from PDFs |
 | 🔢 Calculator | Scientific calculator with trig, log, constants |
@@ -36,6 +40,10 @@ The app's study interface and built-in tools are bundled in the Android app. AI 
 | 🌙 Dark/Light Mode | Eye-friendly themes |
 | 🎓 Four-Year Curriculum | Browse typical eight-semester Computer Engineering and CSE Cyber Security subjects |
 | ⬇️ Download Study Sheets | Save formula sheets and generated flashcards as text files on Android or desktop |
+| ⏱️ Focus Timer | Offline configurable focus/break timer with completed-session tracking |
+| 🎓 Semester GPA | Offline credit-weighted GPA calculator; enter grade points from your official marksheet |
+
+Built-in study tools are bundled in the app and do not require a large filler payload. The APK size is kept focused on useful app features rather than being artificially increased to 100 MB.
 
 ## 📚 Subjects Covered
 - Engineering Mathematics (Calculus, Linear Algebra, Diff. Equations)

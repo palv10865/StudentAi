@@ -78,6 +78,10 @@
         <span class="nav-icon">🎓</span>
         <span class="nav-label">4-Year Curriculum</span>
       </div>
+      <div class="nav-item" data-section="study-tools" onclick="App.showSection('study-tools')">
+        <span class="nav-icon">⏱️</span>
+        <span class="nav-label">Study Planner</span>
+      </div>
 
       <!-- Reference -->
       <div class="nav-group-label">Reference</div>
@@ -333,6 +337,55 @@ Newton's Laws of Motion:
         <p class="curriculum-notice">Mumbai University subject names and electives vary by scheme and admission year. Confirm your official syllabus with your college.</p>
       </div>
       <div class="section-inner" id="curriculum-content"></div>
+    </section>
+
+    <!-- ============ STUDY PLANNER SECTION ============ -->
+    <section id="study-tools-section" class="section">
+      <div class="section-header">
+        <h2>⏱️ Study Planner</h2>
+        <p>Offline focus timer and credit-weighted semester grade calculator</p>
+      </div>
+      <div class="section-inner study-tools-grid">
+        <article class="card study-tool-card">
+          <h3>🍅 Focus Timer</h3>
+          <p>Work in focused intervals, take breaks, and keep track of completed sessions.</p>
+          <div class="timer-settings">
+            <label>
+              Focus (minutes)
+              <input id="focus-minutes" class="form-input" type="number" min="5" max="120" value="25">
+            </label>
+            <label>
+              Break (minutes)
+              <input id="break-minutes" class="form-input" type="number" min="1" max="30" value="5">
+            </label>
+          </div>
+          <div class="timer-face" aria-live="polite">
+            <div id="timer-mode">Focus session</div>
+            <div id="timer-display">25:00</div>
+          </div>
+          <div class="timer-actions">
+            <button class="btn btn-primary" id="timer-toggle" onclick="StudyTools.toggleTimer()">▶ Start</button>
+            <button class="btn btn-secondary" onclick="StudyTools.resetTimer()">↺ Reset</button>
+          </div>
+          <p class="timer-count">Completed focus sessions: <strong id="focus-session-count">0</strong></p>
+        </article>
+
+        <article class="card study-tool-card">
+          <h3>🎓 Semester Grade Calculator</h3>
+          <p>Calculate a credit-weighted GPA: Σ(credits × grade points) ÷ Σ(credits).</p>
+          <p class="study-tool-note">Enter grade points from your official marksheet. This calculator uses a 0–10 point range; confirm the scale for your scheme.</p>
+          <div class="grade-table" role="group" aria-label="Semester courses">
+            <div class="grade-heading"><span>Course (optional)</span><span>Credits</span><span>Grade points</span><span></span></div>
+            <div id="grade-rows"></div>
+          </div>
+          <div class="grade-actions">
+            <button class="btn btn-secondary" onclick="StudyTools.addGradeRow()">＋ Add course</button>
+            <button class="btn btn-secondary" onclick="StudyTools.resetGrades()">Clear</button>
+            <button class="btn btn-primary" onclick="StudyTools.calculateGpa()">Calculate GPA</button>
+          </div>
+          <div class="gpa-result" id="gpa-result" aria-live="polite">Enter course credits and grade points to calculate.</div>
+        </article>
+      </div>
     </section>
 
     <!-- ============ FORMULAS SECTION ============ -->
@@ -601,9 +654,9 @@ Newton's Laws of Motion:
           <div class="settings-row">
             <label>AI Model</label>
             <select id="settings-model" class="form-select" style="width:240px">
-              <option value="gemini-2.0-flash">Gemini 2.0 Flash (Recommended)</option>
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Slower, More Capable)</option>
+              <option value="gemini-3.8-flash">Gemini 3.8 Flash (Recommended)</option>
+              <option value="gemini-3.6-flash">Gemini 3.6 Flash (Stable)</option>
+              <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (Fast)</option>
             </select>
           </div>
 

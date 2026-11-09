@@ -1051,6 +1051,133 @@ body {
   margin: 0 auto;
 }
 
+.study-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  align-items: start;
+  gap: 18px;
+}
+
+.study-tool-card h3 {
+  font-size: 17px;
+  margin-bottom: 8px;
+}
+
+.study-tool-card > p {
+  color: var(--text2);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.study-tool-card .study-tool-note {
+  color: var(--text3);
+  font-size: 12px;
+}
+
+.timer-settings {
+  display: flex;
+  gap: 12px;
+}
+
+.timer-settings label {
+  flex: 1;
+  color: var(--text2);
+  font-size: 12px;
+}
+
+.timer-settings .form-input {
+  margin-top: 6px;
+}
+
+.timer-face {
+  margin: 20px 0;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+}
+
+#timer-mode {
+  color: var(--text2);
+  font-size: 13px;
+}
+
+#timer-display {
+  color: var(--primary-light);
+  font-family: 'Courier New', monospace;
+  font-size: clamp(42px, 12vw, 64px);
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-actions,
+.grade-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.study-tool-card .timer-count {
+  margin: 14px 0 0;
+}
+
+.grade-heading,
+.grade-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(72px, 0.55fr) minmax(92px, 0.7fr) 32px;
+  align-items: center;
+  gap: 8px;
+}
+
+.grade-heading {
+  padding: 0 4px 8px;
+  color: var(--text3);
+  font-size: 11px;
+}
+
+.grade-row {
+  margin-bottom: 8px;
+}
+
+.grade-row .form-input {
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.grade-remove {
+  width: 32px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.grade-remove:hover {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.grade-actions {
+  margin-top: 12px;
+}
+
+.gpa-result {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: rgba(108,99,255,0.08);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .converter-inputs {
   display: flex;
   gap: 12px;
@@ -1959,6 +2086,15 @@ body {
 
   #chat-messages { padding: 12px; }
   #chat-input-area { padding: 10px; }
+
+  .grade-heading,
+  .grade-row {
+    grid-template-columns: minmax(70px, 1fr) 68px 82px 28px;
+    gap: 4px;
+  }
+
+  .grade-row .form-input { padding: 9px 6px; }
+  .grade-remove { width: 28px; }
 }
 
 /* ---- Misc ---- */

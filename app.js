@@ -22,12 +22,14 @@ const App = {
     this.loadSettings();
     this.setupEventListeners();
     this.setupSpeechRecognition();
+    GeminiAPI.init();
     this.renderSubjectSelector();
     this.showSection('chat');
     this.updateTheme();
     this.renderHistory();
     this.checkApiKey();
     Calculator.init();
+    StudyTools.init();
     console.log('StudyMind AI initialized');
   },
 
@@ -1361,8 +1363,7 @@ const App = {
       localStorage.setItem('gemini_api_key', apiKey);
     }
     if (model) {
-      localStorage.setItem('gemini_model', model);
-      GeminiAPI.baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      GeminiAPI.setModel(model);
     }
     showToast('Settings saved!', 'success');
   },
@@ -1371,7 +1372,7 @@ const App = {
     const apiKeyEl = document.getElementById('settings-api-key');
     const modelEl = document.getElementById('settings-model');
     if (apiKeyEl) apiKeyEl.value = localStorage.getItem('gemini_api_key') || '';
-    if (modelEl) modelEl.value = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+    if (modelEl) modelEl.value = GeminiAPI.model;
   },
 
   // ============ UTILITIES ============

@@ -359,3 +359,174 @@ const LogicGates = {
     return rows;
   }
 };
+
+// ============ STUDY PLANNER ============
+const StudyTools = {
+  timerId: null,
+  timerEndsAt: 0,
+  remainingSeconds: 25 * 60,
+  timerMode: 'focus',
+  completedSessions: 0,
+
+  init() {
+    const savedSessions = Number(localStorage.getItem('completed_focus_sessions'));
+    this.completedSessions = Number.isSafeInteger(savedSessions) && savedSessions >= 0
+      ? savedSessions
+      : 0;
+    this.remainingSeconds = this.getDuration('focus');
+    this.updateTimerDisplay();
+    this.updateSessionCount();
+    this.addGradeRow();
+
+    ['focus-minutes', 'break-minutes'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => {
+        if (this.timerId === null) this.resetTimer();
+      });
+    });
+  },
+
+  getDuration(mode) {
+    const id = mode === 'focus' ? 'focus-minutes' : 'break-minutes';
+    const input = document.getElementById(id);
+    const minimum = mode === 'focus' ? 5 : 1;
+    const maximum = mode === 'focus' ? 120 : 30;
+    const value = Number(input?.value);
+    if (!Number.isInteger(value) || value < minimum || value > maximum) {
+      if (input) input.value = String(mode === 'focus' ? 25 : 5);
+      return (mode === 'focus' ? 25 : 5) * 60;
+    }
+    return value * 60;
+  },
+
+  toggleTimer() {
+    if (this.timerId !== null) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+      this.remainingSeconds = Math.max(0, Math.ceil((this.timerEndsAt - Date.now()) / 1000));
+      this.updateTimerDisplay();
+      this.updateTimerButton();
+      return;
+    }
+
+    if (this.remainingSeconds <= 0) this.remainingSeconds = this.getDuration(this.timerMode);
+    this.timerEndsAt = Date.now() + this.remainingSeconds * 1000;
+    this.timerId = setInterval(() => this.tickTimer(), 250);
+    this.updateTimerButton();
+    this.tickTimer();
+  },
+
+  tickTimer() {
+    this.remainingSeconds = Math.max(0, Math.ceil((this.timerEndsAt - Date.now()) / 1000));
+    this.updateTimerDisplay();
+    if (this.remainingSeconds === 0) this.finishTimerPhase();
+  },
+
+  finishTimerPhase() {
+    if (this.timerId !== null) clearInterval(this.timerId);
+    this.timerId = null;
+
+    if (this.timerMode === 'focus') {
+      this.completedSessions += 1;
+      localStorage.setItem('completed_focus_sessions', String(this.completedSessions));
+      this.updateSessionCount();
+      this.timerMode = 'break';
+      showToast('Focus session complete. Time for a break!', 'success');
+    } else {
+      this.timerMode = 'focus';
+      showToast('Break complete. Ready for another focus session?', 'info');
+    }
+
+    this.remainingSeconds = this.getDuration(this.timerMode);
+    this.updateTimerDisplay();
+    this.updateTimerButton();
+  },
+
+  resetTimer() {
+    if (this.timerId !== null) clearInterval(this.timerId);
+    this.timerId = null;
+    this.remainingSeconds = this.getDuration(this.timerMode);
+    this.updateTimerDisplay();
+    this.updateTimerButton();
+  },
+
+  updateTimerDisplay() {
+    const minutes = Math.floor(this.remainingSeconds / 60);
+    const seconds = this.remainingSeconds % 60;
+    const display = document.getElementById('timer-display');
+    const mode = document.getElementById('timer-mode');
+    if (display) display.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    if (mode) mode.textContent = this.timerMode === 'focus' ? 'Focus session' : 'Break';
+  },
+
+  updateTimerButton() {
+    const button = document.getElementById('timer-toggle');
+    if (button) button.textContent = this.timerId === null ? '▶ Start' : '⏸ Pause';
+  },
+
+  updateSessionCount() {
+    const count = document.getElementById('focus-session-count');
+    if (count) count.textContent = String(this.completedSessions);
+  },
+
+  addGradeRow() {
+    const container = document.getElementById('grade-rows');
+    if (!container) return;
+    if (container.children.length >= 20) {
+      showToast('You can add up to 20 courses.', 'error');
+      return;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'grade-row';
+    row.innerHTML = `
+      <input class="form-input grade-course" type="text" maxlength="60" placeholder="Course name" aria-label="Course name (optional)">
+      <input class="form-input grade-credits" type="number" min="0.1" max="60" step="0.1" placeholder="Credits" aria-label="Course credits">
+      <input class="form-input grade-points" type="number" min="0" max="10" step="0.1" placeholder="Points" aria-label="Grade points">
+      <button class="grade-remove" type="button" aria-label="Remove course" title="Remove course" onclick="this.closest('.grade-row').remove()">×</button>`;
+    container.appendChild(row);
+  },
+
+  calculateGpa() {
+    const rows = [...document.querySelectorAll('#grade-rows .grade-row')];
+    let weightedPoints = 0;
+    let totalCredits = 0;
+    let courseCount = 0;
+
+    for (const row of rows) {
+      const creditsText = row.querySelector('.grade-credits').value.trim();
+      const pointsText = row.querySelector('.grade-points').value.trim();
+      if (!creditsText && !pointsText) continue;
+
+      const credits = Number(creditsText);
+      const points = Number(pointsText);
+      if (!creditsText || !pointsText || !Number.isFinite(credits) || credits <= 0 || credits > 60 ||
+          !Number.isFinite(points) || points < 0 || points > 10) {
+        showToast('Enter credits (greater than 0) and grade points from 0 to 10 for each course.', 'error');
+        return;
+      }
+
+      weightedPoints += credits * points;
+      totalCredits += credits;
+      courseCount += 1;
+    }
+
+    if (!courseCount || totalCredits <= 0) {
+      showToast('Add at least one course with credits and grade points.', 'error');
+      return;
+    }
+
+    const result = document.getElementById('gpa-result');
+    if (result) {
+      result.textContent = `Semester GPA: ${(weightedPoints / totalCredits).toFixed(2)} · ${totalCredits.toFixed(1)} total credits · ${courseCount} courses`;
+    }
+  },
+
+  resetGrades() {
+    const container = document.getElementById('grade-rows');
+    if (!container) return;
+    container.replaceChildren();
+    this.addGradeRow();
+    const result = document.getElementById('gpa-result');
+    if (result) result.textContent = 'Enter course credits and grade points to calculate.';
+  }
+};
