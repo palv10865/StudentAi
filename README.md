@@ -8,7 +8,7 @@ An Android and web study assistant for engineering students, created by Vipin Pa
 - [Browse all APK releases](https://github.com/palv10865/StudentAi/releases)
 - [Open the GitHub Pages site](https://palv10865.github.io/StudentAi/)
 
-If the website is unavailable, enable **Settings → Pages → Build and deployment → Source: GitHub Actions** in the repository, then run **Deploy to GitHub Pages** from Actions.
+If the website is unavailable, enable **Settings → Pages → Build and deployment → Source: GitHub Actions** in the repository. Pushes to `main` deploy automatically; if you enable Pages after an earlier failed run, choose **Actions → Deploy to GitHub Pages → Run workflow** once.
 
 ## Features
 
