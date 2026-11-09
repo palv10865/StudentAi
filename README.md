@@ -26,7 +26,7 @@ The app's study interface and built-in tools are bundled in the Android app. AI 
 
 | Feature | Description |
 |---------|-------------|
-| 🤖 AI Chat | Gemini 3.8 Flash with step-by-step solutions |
+| 🤖 AI Chat | Low-latency Gemini 3.5 Flash-Lite by default, short recent context, and automatic model fallback during temporary overload |
 | 📸 Image Upload | Solve from photos of handwritten/printed problems |
 | 📄 PDF Parser | Extract & solve problems from PDFs |
 | 🔢 Calculator | Scientific calculator with trig, log, constants |

@@ -1,13 +1,16 @@
 // Gemini API Integration Module
 const GeminiAPI = {
-  model: 'gemini-3.8-flash',
-  baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
+  model: 'gemini-3.5-flash-lite',
+  baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
 
   init() {
     const savedModel = localStorage.getItem('gemini_model');
     const supportedModels = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
-    const model = supportedModels.includes(savedModel) ? savedModel : this.model;
+    const defaultMigrated = localStorage.getItem('gemini_latency_default_migrated') === 'true';
+    const migratePreviousDefault = savedModel === 'gemini-3.8-flash' && !defaultMigrated;
+    const model = supportedModels.includes(savedModel) && !migratePreviousDefault ? savedModel : this.model;
     this.setModel(model);
+    localStorage.setItem('gemini_latency_default_migrated', 'true');
   },
 
   setModel(model) {
@@ -25,33 +28,24 @@ const GeminiAPI = {
   },
 
   getSystemPrompt() {
-    return `You are an expert BTech tutor AI assistant named StudyMind. You specialize in:
-- Engineering Mathematics (Calculus, Linear Algebra, Differential Equations, Probability & Statistics)
-- Physics (Mechanics, Thermodynamics, Electromagnetism, Optics, Modern Physics)
-- Engineering Mechanics (Statics, Dynamics, Strength of Materials)
-- Electronics & Electrical Engineering (Circuit Analysis, Digital Electronics, Signals & Systems)
-- Computer Science (Data Structures, Algorithms, Programming, Databases, OS, Networks)
-- Cyber Security (Cryptography, Network Defense, Secure Software, Digital Forensics, Incident Response, Privacy, and Risk Management)
-- Chemistry (Engineering Chemistry, Electrochemistry, Thermochemistry, Corrosion, Materials, and Polymers)
-- Drawing & Design concepts
+    return `You are StudyMind, a clear and accurate BTech tutor for engineering mathematics, physics, mechanics, chemistry, electronics, computer engineering, and cybersecurity.
 
-Instructions:
-1. ALWAYS provide step-by-step solutions with clear reasoning
-2. Use LaTeX notation for all mathematical expressions (wrap in $...$ for inline, $$...$$ for display)
-3. Structure your answers with: **Understanding the Problem**, **Solution Steps**, **Final Answer**
-4. Explain each step in simple, easy-to-understand language
-5. Provide the underlying concept/theory when relevant
-6. If asked about an image, analyze it thoroughly and solve any problems shown
-7. For numerical problems, show all calculations clearly
-8. Use bullet points and numbered lists for clarity
-9. If multiple approaches exist, mention alternatives
-10. End with a **Key Takeaway** or **Remember** tip
-11. For code, use proper markdown code blocks with language specification
-12. For mechanics problems, state assumptions, draw or describe a free-body diagram, show equilibrium or motion equations, and keep units consistent
-13. For physics and chemistry numericals, identify knowns and unknowns, show substitutions and units, balance chemical equations when needed, and check the result
-14. For cybersecurity topics, explain defensive and ethical context and use safe, authorized examples
-15. When a student names a Mumbai University subject, focus the answer on that course and exam preparation; remind them that exact topics depend on their official scheme
-16. Be encouraging and supportive to students`;
+Answering style:
+- Start with the direct answer or result. Be concise and avoid filler, repeated wording, and unnecessary headings.
+- For calculations, show the key steps, equations, substitutions, and units so the result can be checked; explain assumptions when they matter.
+- For concepts, give a short definition and explanation, adding an example only when it helps.
+- Use readable LaTeX for mathematics and fenced, language-labelled code blocks for code.
+- Adapt the amount of detail to the question; provide a fuller derivation when requested or needed to teach the method.
+- For images and PDFs, solve the actual question shown and state clearly if any part is unreadable.
+- For Mumbai University exam help, focus on the named course and remind students that exact topics vary by official scheme.
+- Keep cybersecurity guidance defensive and limited to authorized, safe examples.
+- End with a brief takeaway only when it adds useful information.`;
+  },
+
+  getRecentMessages(messages) {
+    const recentMessages = messages.slice(-12);
+    if (recentMessages[0]?.role === 'assistant') recentMessages.shift();
+    return recentMessages;
   },
 
   async sendMessage(messages, imageData = null, pdfText = null) {
@@ -60,11 +54,12 @@ Instructions:
       throw new Error('No API key set. Please add your Gemini API key in Settings.');
     }
 
+    const recentMessages = this.getRecentMessages(messages);
     const contents = [];
 
     // Build conversation history
-    for (let i = 0; i < messages.length - 1; i++) {
-      const msg = messages[i];
+    for (let i = 0; i < recentMessages.length - 1; i++) {
+      const msg = recentMessages[i];
       contents.push({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
@@ -72,7 +67,7 @@ Instructions:
     }
 
     // Build the latest user message with potential multimodal content
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = recentMessages[recentMessages.length - 1];
     const userParts = [];
 
     if (pdfText) {
@@ -98,10 +93,8 @@ Instructions:
       },
       contents: contents,
       generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 8192,
+        temperature: 0.4,
+        maxOutputTokens: 4096,
       },
       safetySettings: [
         { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
@@ -137,18 +130,17 @@ Instructions:
       throw new Error('No API key set. Please add your Gemini API key in Settings.');
     }
 
-    const streamUrl = `${this.baseUrl.replace(/:generateContent$/, ':streamGenerateContent')}?alt=sse&key=${encodeURIComponent(apiKey)}`;
-    
+    const recentMessages = this.getRecentMessages(messages);
     const contents = [];
-    for (let i = 0; i < messages.length - 1; i++) {
-      const msg = messages[i];
+    for (let i = 0; i < recentMessages.length - 1; i++) {
+      const msg = recentMessages[i];
       contents.push({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
       });
     }
 
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = recentMessages[recentMessages.length - 1];
     const userParts = [];
 
     if (pdfText) {
@@ -174,50 +166,82 @@ Instructions:
       },
       contents,
       generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 8192,
+        temperature: 0.4,
+        maxOutputTokens: 4096,
       }
     };
 
-    const response = await fetch(streamUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
+    const modelPriority = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash'];
+    const fallbackModels = modelPriority.filter(model => model !== this.model);
+    const attemptedModels = new Set();
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || `API Error: ${response.status}`);
-    }
+    const streamFromModel = async (model) => {
+      attemptedModels.add(model);
+      const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
+      const response = await fetch(streamUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
+      if (!response.ok) {
+        const error = await response.json();
+        const message = error.error?.message || `API Error: ${response.status}`;
+        const isTemporaryOverload = response.status === 503 ||
+          /high demand|overload|temporarily unavailable/i.test(message);
+        const fallback = fallbackModels.find(candidate => !attemptedModels.has(candidate));
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+        if (isTemporaryOverload && fallback) {
+          if (typeof showToast === 'function') {
+            showToast(`Gemini is busy. Retrying with ${fallback}.`, 'info');
+          }
+          return streamFromModel(fallback);
+        }
+        if (isTemporaryOverload) {
+          throw new Error('Gemini is temporarily at capacity across the available models. Please try again shortly.');
+        }
+        throw new Error(message);
+      }
 
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let buffer = '';
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') continue;
-          try {
-            const data = JSON.parse(jsonStr);
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            if (text) {
-              fullText += text;
-              if (onChunk) onChunk(text, fullText);
-            }
-          } catch (e) { /* skip parse errors */ }
+      const processLine = (line) => {
+        if (!line.startsWith('data:')) return;
+        const jsonStr = line.slice(5).trim();
+        if (!jsonStr || jsonStr === '[DONE]') return;
+
+        try {
+          const data = JSON.parse(jsonStr);
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (text) {
+            fullText += text;
+            if (onChunk) onChunk(text, fullText);
+          }
+        } catch (error) {
+          console.warn('Skipping malformed Gemini stream event:', error);
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() || '';
+        lines.forEach(processLine);
+
+        if (done) {
+          if (buffer) processLine(buffer);
+          break;
         }
       }
-    }
 
-    return fullText;
+      return fullText;
+    };
+
+    return streamFromModel(this.model);
   },
 
   async generateFlashcards(topic, count = 10) {
