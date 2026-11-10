@@ -127,7 +127,10 @@ const App = {
   },
 
   getProgramName() {
-    return CurriculumData[this.institutionProfile?.program]?.name || 'Computer Engineering';
+    const curriculum = this.institutionProfile?.type === 'autonomous'
+      ? SLRTCECurriculumData
+      : CurriculumData;
+    return curriculum[this.institutionProfile?.program]?.name || 'Computer Engineering';
   },
 
   renderDashboard() {
@@ -157,7 +160,7 @@ const App = {
       let characterCount = 0;
       let pagesRead = 0;
       let textWasLimited = false;
-      const maxCharacters = 120000;
+      const maxCharacters = 500000;
       const maxPages = 200;
       for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, maxPages) && characterCount < maxCharacters; pageNumber++) {
         const page = await pdf.getPage(pageNumber);
@@ -202,7 +205,9 @@ const App = {
     const hasSyllabus = Boolean(this.syllabusText);
     const message = hasSyllabus
       ? `Imported: ${this.syllabusFileName || 'official syllabus PDF'} · available to AI study tools on this device.`
-      : 'No official syllabus imported. Add your course PDF for syllabus-specific answers; the built-in course guide is a general study aid.';
+      : this.institutionProfile?.type === 'autonomous'
+        ? 'No syllabus imported. Download an available official PDF below and import it for syllabus-specific AI study.'
+        : 'No official syllabus imported. Add your course PDF for syllabus-specific answers; the built-in course guide is a general study aid.';
     if (status) status.textContent = message;
     if (settingsStatus) settingsStatus.textContent = hasSyllabus
       ? `Syllabus: ${this.syllabusFileName || 'Imported PDF'}`
@@ -222,11 +227,17 @@ const App = {
     }
     const curriculumNotice = document.getElementById('curriculum-notice');
     if (curriculumNotice) {
-      curriculumNotice.textContent = hasSyllabus
-        ? 'AI study tools can use your imported syllabus. Confirm exam schemes and updates with your college.'
-        : this.institutionProfile?.type === 'autonomous'
-          ? 'The built-in module list is a general guide, not a verified SLRTCE scheme. Import the current official SLRTCE syllabus PDF for exact subjects and modules.'
+      if (this.institutionProfile?.type === 'autonomous') {
+        const branch = SLRTCECurriculumData[this.institutionProfile.program];
+        const studyNote = hasSyllabus
+          ? ' AI study tools can use your imported syllabus text; confirm updates with your college.'
+          : ' If an official PDF is available for your year, download and import it for syllabus-specific AI study.';
+        curriculumNotice.textContent = `${branch?.notice || 'Use the official SLRTCE syllabus links below.'} Detailed module contents and electives are in the linked PDFs.${studyNote}`;
+      } else {
+        curriculumNotice.textContent = hasSyllabus
+          ? 'AI study tools can use your imported syllabus. Confirm exam schemes and updates with your college.'
           : 'The built-in module list is a general guide. Mumbai University subjects vary by scheme and admission year; import your official syllabus PDF for exact modules.';
+      }
     }
   },
 
@@ -955,23 +966,35 @@ const App = {
     if (!container) return;
 
     const branchKey = this.institutionProfile?.program || 'computerEngineering';
-    const branch = CurriculumData[branchKey] || CurriculumData.computerEngineering;
+    const curriculum = this.institutionProfile?.type === 'autonomous'
+      ? SLRTCECurriculumData
+      : CurriculumData;
+    const branch = curriculum[branchKey] || curriculum.computerEngineering;
     container.innerHTML = `
       <section class="curriculum-branch">
         <h3 class="curriculum-branch-title">${this.escapeHtml(branch.name)}</h3>
         ${branch.years.map(year => `
           <div class="curriculum-year">
-            <h4 class="curriculum-year-title">${this.escapeHtml(year.name)}</h4>
+            <div class="curriculum-year-header">
+              <div>
+                <h4 class="curriculum-year-title">${this.escapeHtml(year.name)}</h4>
+                ${year.revision ? `<p class="curriculum-revision">${this.escapeHtml(year.revision)}</p>` : ''}
+              </div>
+              ${year.syllabusUrl ? `<a class="curriculum-syllabus-link" href="${this.escapeHtml(year.syllabusUrl)}" target="_blank" rel="noopener">Open official syllabus PDF ↗</a>` : ''}
+            </div>
             <div class="curriculum-semesters">
               ${year.semesters.map(semester => `
                 <article class="curriculum-semester">
                   <h4>${this.escapeHtml(semester.name)}</h4>
                   <div class="curriculum-course-list">
-                    ${semester.subjects.map(course => `
-                      <button class="curriculum-course" onclick="App.startCurriculumCourse(${JSON.stringify(course)}, ${JSON.stringify(branch.name)})">
-                        ${this.escapeHtml(course)} <span aria-hidden="true">→</span>
-                      </button>
-                    `).join('')}
+                    ${semester.subjects.map(subject => {
+                      const course = typeof subject === 'string' ? subject : subject.name;
+                      return `
+                        <button class="curriculum-course" onclick="App.startCurriculumCourse(${JSON.stringify(course)}, ${JSON.stringify(branch.name)}, ${JSON.stringify(semester.name)}, ${JSON.stringify(year.revision || '')}, ${JSON.stringify(year.syllabusUrl || '')})">
+                          ${this.escapeHtml(course)} <span aria-hidden="true">→</span>
+                        </button>
+                      `;
+                    }).join('')}
                   </div>
                 </article>
               `).join('')}
@@ -983,17 +1006,22 @@ const App = {
     this.updateSyllabusStatus();
   },
 
-  startCurriculumCourse(course, branch) {
+  startCurriculumCourse(course, branch, semesterName, revision, syllabusUrl) {
     const input = document.getElementById('chat-input');
     this.showSection('chat');
     if (input) {
       const institution = this.institutionProfile?.type === 'autonomous'
         ? 'SLRTCE autonomous'
         : 'Mumbai University';
-      const semester = this.institutionProfile?.semester
-        ? ` My selected semester is ${this.institutionProfile.semester}.`
+      const semester = semesterName
+        ? ` This course is listed in ${semesterName}${revision ? ` (${revision})` : ''}.`
+        : this.institutionProfile?.semester
+          ? ` My selected semester is ${this.institutionProfile.semester}.`
+          : '';
+      const syllabusSource = syllabusUrl
+        ? ` The official syllabus PDF for this year is ${syllabusUrl}; do not claim to know its contents unless they are present in my imported syllabus or chat.`
         : '';
-      input.value = `I'm studying ${course} in ${branch} under ${institution}.${semester} Use my imported official syllabus if available. If the syllabus does not confirm a course unit or exam pattern, say so instead of guessing. Explain the key topics and show a step-by-step worked example.`;
+      input.value = `I'm studying ${course} in ${branch} under ${institution}.${semester}${syllabusSource} Use my imported official syllabus if available. If the syllabus does not confirm a course unit or exam pattern, say so instead of guessing. Explain the key topics and show a step-by-step worked example.`;
       input.focus();
       this.autoResize({ target: input });
     }

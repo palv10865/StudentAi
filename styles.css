@@ -1006,9 +1006,29 @@ body {
   margin-bottom: 24px;
 }
 
-.curriculum-year-title {
+.curriculum-year-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
+}
+
+.curriculum-year-title {
+  margin-bottom: 4px;
   color: var(--text2);
+}
+
+.curriculum-revision {
+  color: var(--text3);
+  font-size: 12px;
+}
+
+.curriculum-syllabus-link {
+  flex: 0 0 auto;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .curriculum-semesters {
@@ -1047,6 +1067,13 @@ body {
 .curriculum-course:hover {
   border-color: var(--primary);
   color: var(--text);
+}
+
+@media (max-width: 600px) {
+  .curriculum-year-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 /* ---- Unit Converter ---- */

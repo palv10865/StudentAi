@@ -25,7 +25,7 @@ If the website is unavailable, enable **Settings → Pages → Build and deploym
 
 AI answers and generated content need internet access and a Gemini API key. Chat history, study memory, and the key are stored on this device only; there is no account sync or cloud backup. Android uninstall or clearing app data may remove them. The key is sent directly to Google's API and is not secret from someone with access to the device or app. Use a personal key, restrict it in Google AI Studio where available, and do not enter a key on a shared device.
 
-Built-in course lists and formula groups are general study guides, not official course schemes. Subject names, modules, and exam rules vary by university, course, and admission year. Import the current official syllabus PDF in **Syllabus & Modules** for syllabus-aware AI study help. Imported syllabus text and student settings stay on the device.
+Mumbai University course lists and formula groups remain general study guides because subjects vary by scheme and admission year. For autonomous SLRTCE students, **Syllabus & Modules** links the official Computer Engineering syllabus PDF for each year and displays the subjects from those documents; detailed modules and elective rules are in the PDFs. SLRTCE currently publishes only the first-year Cyber Security syllabus, so later years are not guessed or shown as official. Import the relevant PDF for syllabus-aware AI study help. Imported syllabus text and student settings stay on the device.
 
 ## Android releases and signing
 
@@ -52,4 +52,4 @@ Pinned browser libraries: Chart.js 4.4.0, DOMPurify 3.4.17, Highlight.js CDN ass
 
 ## Curriculum coverage
 
-The study guides cover typical four-year Computer Engineering and CSE Cyber Security topics, alongside engineering mathematics, physics, mechanics, chemistry, electronics, and core computer science. Course names and electives vary by syllabus scheme.
+The Mumbai University path retains general four-year Computer Engineering and CSE Cyber Security guides. The autonomous SLRTCE path uses the official year-linked PDFs; Computer Engineering revisions differ by year (R-2026 for FY/TY and R-2025 for SY/Final Year), and Cyber Security currently has an official R-2026 first-year syllabus only.

@@ -274,6 +274,66 @@ const CurriculumData = {
   }
 };
 
+const SLRTCECurriculumData = {
+  computerEngineering: {
+    name: 'Computer Engineering',
+    notice: 'SLRTCE Computer Engineering syllabi are linked for all four years. Revisions differ by cohort: FY and TY use R-2026; SY and Final Year use R-2025.',
+    years: [
+      {
+        name: 'Year 1',
+        revision: 'R-2026 · AY 2026-27',
+        syllabusUrl: 'https://slrtce.in/wp-content/uploads/2026/07/F.Y.-B.Tech-Computer.pdf',
+        semesters: [
+          { name: 'Semester I', subjects: ['Engineering Mathematics I', 'Engineering Physics', 'Engineering Mechanics', 'Structured Programming Approach', 'Professional Communication & Ethics', 'Engineering Physics Lab', 'Engineering Mechanics Lab', 'Internet Technology Lab', 'Professional Communication & Ethics Lab', 'IDEA Lab', 'C Programming Lab', 'Universal Human Values'] },
+          { name: 'Semester II', subjects: ['Engineering Mathematics II', 'Engineering Chemistry', 'Basic Electrical & Electronics Engineering', 'Engineering Graphics', 'Digital Logic & Computer Organization (DLCO)', 'Engineering Chemistry Lab', 'Basic Electrical & Electronics Engineering Lab', 'Engineering Graphics Lab', 'Digital Logic & Computer Organization Lab (DLCO)', 'IDEA Lab', 'Python Programming', 'Indian Knowledge System'] }
+        ]
+      },
+      {
+        name: 'Year 2',
+        revision: 'R-2025',
+        syllabusUrl: 'https://slrtce.in/wp-content/uploads/2026/07/S.Y.-B.Tech_Computer.pdf',
+        semesters: [
+          { name: 'Semester III', subjects: ['Discrete Mathematics and Graph Theory', 'Analysis of Algorithm', 'Database Management System', 'Object Oriented Programming', 'Integrated Lab 1', 'Object Oriented Programming Lab', 'Entrepreneurship Development', 'Environmental Science', 'IDEA Lab 3'] },
+          { name: 'Semester IV', subjects: ['Sampling Theory and Optimization', 'Software Engineering & Project Management', 'Microprocessor & Microcontroller', 'Integrated Lab 2', 'IDEA Lab 4', 'Full Stack Development', 'Design Thinking', 'Business Model Development'] }
+        ]
+      },
+      {
+        name: 'Year 3',
+        revision: 'R-2026',
+        syllabusUrl: 'https://slrtce.in/wp-content/uploads/2026/07/T.Y.-B.Tech-Computer.pdf',
+        semesters: [
+          { name: 'Semester V', subjects: ['Theory of Computation', 'Computer Networks', 'Data Warehousing and Mining', 'Computer Networks Lab', 'Data Warehousing and Mining Lab', 'IDEA Lab 5', 'Program Elective I (Internet of Things, Digital Communication, Artificial Intelligence, Object Oriented Modeling & Design, or Digital Signal Processing)', 'Multidisciplinary Minor II', 'Open Source Technology', 'Open Elective III'] },
+          { name: 'Semester VI', subjects: ['Compiler Construction', 'Cyber Security and Digital Forensics', 'Machine Learning', 'Cyber Security Lab', 'Machine Learning Lab', 'Dissertation I', 'Program Elective II (POSIX Programming, Advance Computer Network, Natural Language Processing, Parallel Algorithms, or Image Processing)', 'Multidisciplinary Minor III', 'Professional Communication & Ethics', 'Open Elective IV'] }
+        ]
+      },
+      {
+        name: 'Year 4',
+        revision: 'R-2025',
+        syllabusUrl: 'https://slrtce.in/wp-content/uploads/2026/07/Final-Year-B.Tech_Computer.pdf',
+        semesters: [
+          { name: 'Semester VII', subjects: ['Machine Learning', 'Big Data Analysis', 'Program Elective I (Machine Vision, Quantum Computing, or Natural Language Processing)', 'Program Elective II (Augmented and Virtual Reality, Blockchain, or Information Retrieval)'] },
+          { name: 'Semester VIII', subjects: ['Distributed Computing', 'Program Elective III (Deep Learning, Digital Forensics, or Applied Data Science)', 'Program Elective IV (Optimization in Machine Learning, High Performance Computing, or Social Media Analytics)'] }
+        ]
+      }
+    ]
+  },
+  cyberSecurity: {
+    name: 'Computer Science & Engineering (Cyber Security)',
+    notice: 'The current official SLRTCE Cyber Security syllabus link publishes Year 1 only (R-2026, AY 2026-27). Years 2-4 are omitted because no official syllabus for those years is published on the college syllabus page.',
+    years: [
+      {
+        name: 'Year 1',
+        revision: 'R-2026 · AY 2026-27',
+        syllabusUrl: 'https://slrtce.in/wp-content/uploads/2026/07/F.Y.B.Tech_inComputer_Science_Engineering_Cyber_Security.pdf',
+        semesters: [
+          { name: 'Semester I', subjects: ['Engineering Mathematics I', 'Engineering Physics', 'Engineering Mechanics', 'Structured Programming Approach', 'Professional Communication & Ethics', 'Engineering Physics Lab', 'Engineering Mechanics Lab', 'Internet Technology Lab', 'Professional Communication & Ethics Lab', 'IDEA Lab', 'C Programming Lab', 'Universal Human Values'] },
+          { name: 'Semester II', subjects: ['Engineering Mathematics II', 'Engineering Chemistry', 'Basic Electrical & Electronics Engineering', 'Engineering Graphics', 'Digital Logic & Computer Organization (DLCO)', 'Engineering Chemistry Lab', 'Basic Electrical & Electronics Engineering Lab', 'Engineering Graphics Lab', 'Digital Logic & Computer Organization Lab (DLCO)', 'IDEA Lab', 'Python Programming', 'Indian Knowledge System'] }
+        ]
+      }
+    ]
+  }
+};
+
 // Unit conversion data
 const UnitData = {
   length: {
