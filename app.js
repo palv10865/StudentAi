@@ -328,6 +328,7 @@ const App = {
       }
       if (e.key === 'Escape') {
         this.hideApiKeyModal();
+        this.closeMobileSidebar();
       }
     });
 
@@ -386,11 +387,36 @@ const App = {
     if (section === 'periodic') this.renderPeriodicTable();
     if (section === 'converter') this.initConverter();
     if (section === 'logic') this.renderLogicGate();
+    this.closeMobileSidebar();
   },
 
   toggleSidebar() {
-    document.getElementById('sidebar')?.classList.toggle('collapsed');
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      sidebar.classList.toggle('mobile-open');
+      this.updateMobileSidebarState();
+      return;
+    }
+
+    sidebar.classList.toggle('collapsed');
     document.getElementById('main-content')?.classList.toggle('sidebar-collapsed');
+  },
+
+  closeMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar || !window.matchMedia('(max-width: 768px)').matches) return;
+    sidebar.classList.remove('mobile-open');
+    this.updateMobileSidebarState();
+  },
+
+  updateMobileSidebarState() {
+    const sidebar = document.getElementById('sidebar');
+    const isOpen = Boolean(sidebar?.classList.contains('mobile-open'));
+    const toggle = document.getElementById('sidebar-toggle');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    toggle?.setAttribute('aria-expanded', String(isOpen));
+    backdrop?.classList.toggle('active', isOpen);
   },
 
   toggleTheme() {

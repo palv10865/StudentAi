@@ -95,6 +95,10 @@ body {
   width: 64px;
 }
 
+.sidebar-backdrop {
+  display: none;
+}
+
 .sidebar-header {
   padding: 20px 16px;
   border-bottom: 1px solid var(--border);
@@ -2129,15 +2133,27 @@ body {
 @media (max-width: 768px) {
   #sidebar {
     position: fixed;
+    top: 0;
+    left: 0;
     height: 100vh;
     z-index: 200;
     transform: translateX(-100%);
     width: var(--sidebar-w) !important;
     transition: transform var(--transition);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   #sidebar.mobile-open {
     transform: translateX(0);
+  }
+
+  .sidebar-backdrop.active {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    border: 0;
+    background: rgba(0,0,0,0.55);
   }
 
   .message-body { max-width: 95%; }

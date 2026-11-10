@@ -138,13 +138,14 @@
       </div>
     </div>
   </nav>
+  <button id="sidebar-backdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation menu" onclick="App.closeMobileSidebar()"></button>
 
   <!-- ============ MAIN CONTENT ============ -->
   <div id="main-content">
 
     <!-- Header -->
     <header id="app-header">
-      <button class="icon-btn" onclick="App.toggleSidebar()" title="Toggle sidebar">☰</button>
+      <button class="icon-btn" id="sidebar-toggle" aria-controls="sidebar" aria-expanded="false" onclick="App.toggleSidebar()" title="Toggle navigation menu">☰</button>
       <span class="header-title" id="header-title">AI Chat — BTech Tutor</span>
       <div class="header-actions">
         <button class="icon-btn" onclick="App.startNewChat()" title="Start a new chat" id="clear-btn">✚</button>
