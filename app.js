@@ -439,8 +439,10 @@ const App = {
     if (!text && !this.currentImage && !this.currentPDF) return;
 
     const attachmentLabel = this.currentImage && this.currentPDF
-      ? '[Image and PDF attached]'
-      : this.currentImage ? '[Image attached]' : '[PDF attached]';
+      ? 'Please inspect the attached image and PDF and answer the question shown.'
+      : this.currentImage
+        ? 'Please inspect the attached image and answer the question shown. If no question is visible, describe its content.'
+        : '[PDF attached]';
     const userMessage = text || attachmentLabel;
     input.value = '';
     input.style.height = 'auto';
@@ -457,12 +459,13 @@ const App = {
     localStorage.setItem('question_history', JSON.stringify(this.questionHistory));
     this.renderHistory();
 
-    // Display user message
-    this.appendMessage('user', userMessage, this.currentImage);
-    this.clearPreview();
-
     const imageData = this.currentImage;
     const pdfText = this.currentPDF;
+
+    // Display user message
+    this.appendMessage('user', userMessage, imageData);
+    this.clearPreview();
+
     this.currentImage = null;
     this.currentPDF = null;
 
