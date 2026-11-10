@@ -40,7 +40,7 @@ android {
         applicationId "com.vipinpal.studymindai"
         minSdk 24
         targetSdk 34
-        def appVersionCode = project.findProperty('appVersionCode')?.toString()?.toInteger() ?: 4
+        def appVersionCode = project.findProperty('appVersionCode')?.toString()?.toInteger() ?: 5
         versionCode appVersionCode
         versionName "1.0.${appVersionCode}"
         multiDexEnabled true

@@ -722,6 +722,55 @@ body {
   animation: pulse-red 1s infinite;
 }
 
+.voice-chat-toggle {
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--text2);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.voice-chat-toggle[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: rgba(108, 99, 255, 0.16);
+  color: var(--text);
+}
+
+.voice-style-options {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.voice-style-option {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.voice-style-option:hover,
+.voice-style-option:focus-visible {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.voice-style-option span {
+  color: var(--text3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 @keyframes pulse-red {
   0%, 100% { box-shadow: 0 0 0 0 rgba(214,48,49,0.4); }
   50% { box-shadow: 0 0 0 8px rgba(214,48,49,0); }

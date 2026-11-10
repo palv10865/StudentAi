@@ -13,6 +13,14 @@ const App = {
   currentSubject: 'general',
   currentImage: null,
   currentPDF: null,
+  voiceStyle: '',
+  voiceChatEnabled: false,
+  pendingVoiceAction: '',
+  voiceTranscript: '',
+  speechToken: 0,
+  activeUtteranceId: '',
+  speechNextChunk: null,
+  isSending: false,
   isDarkMode: true,
   isListening: false,
   isSpeaking: false,
@@ -39,6 +47,7 @@ const App = {
     this.renderHistory();
     this.renderDashboard();
     this.updateSyllabusStatus();
+    this.updateVoiceChatButton();
     if (needsStudentSetup) this.openInstitutionSetup(true);
     else this.checkApiKey();
     Calculator.init();
@@ -51,6 +60,8 @@ const App = {
     this.isDarkMode = savedTheme !== 'light';
     this.currentSubject = localStorage.getItem('subject') || 'general';
     this.studentName = localStorage.getItem('student_name')?.trim().slice(0, 40) || '';
+    const savedVoiceStyle = localStorage.getItem('voice_style');
+    this.voiceStyle = ['jarvis', 'friday'].includes(savedVoiceStyle) ? savedVoiceStyle : '';
     this.syllabusText = localStorage.getItem('official_syllabus_text') || '';
     this.syllabusFileName = localStorage.getItem('official_syllabus_name') || '';
 
@@ -390,9 +401,6 @@ const App = {
     // Settings
     document.getElementById('save-settings')?.addEventListener('click', () => this.saveSettings());
 
-    // Voice input
-    document.getElementById('voice-btn')?.addEventListener('click', () => this.toggleVoiceInput());
-
     // TTS
     document.getElementById('tts-btn')?.addEventListener('click', () => this.toggleTTS());
 
@@ -476,6 +484,9 @@ const App = {
     const input = document.getElementById('chat-input');
     const text = input?.value.trim();
     if (!text && !this.currentImage && !this.currentPDF) return;
+    if (this.isSending) return;
+    if (this.isListening) this.stopVoiceRecognition();
+    this.isSending = true;
 
     const attachmentLabel = this.currentImage && this.currentPDF
       ? 'Please inspect the attached image and PDF and answer the question shown.'
@@ -511,6 +522,7 @@ const App = {
     // Show typing indicator
     const typingId = this.showTyping();
 
+    let responseReceived = false;
     try {
       let fullResponse = '';
       const msgEl = this.createAssistantMessage();
@@ -541,10 +553,24 @@ const App = {
 
       // Suggest related topics
       this.suggestRelatedTopics(fullResponse);
+      responseReceived = true;
 
     } catch (e) {
       this.removeTyping(typingId);
       this.appendMessage('error', `❌ ${e.message}`);
+    } finally {
+      this.isSending = false;
+      if (this.voiceChatEnabled) {
+        const assistantMessages = this.chatHistory.filter(message => message.role === 'assistant');
+        const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
+        if (responseReceived && lastAssistantMessage) {
+          this.speakText(lastAssistantMessage.content, () => {
+            if (this.voiceChatEnabled) this.startVoiceRecognition();
+          });
+        } else {
+          this.startVoiceRecognition();
+        }
+      }
     }
 
     this.scrollToBottom();
@@ -727,14 +753,7 @@ const App = {
 
   speakMessage(btn) {
     const text = btn.closest('.message-body').querySelector('.message-text').innerText;
-    if (this.synth.speaking) {
-      this.synth.cancel();
-      return;
-    }
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    this.synth.speak(utterance);
+    this.speakText(text);
   },
 
   async exportMessage(btn) {
@@ -891,56 +910,337 @@ const App = {
   // ============ VOICE INPUT ============
   setupSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = true;
-      this.recognition.lang = 'en-US';
+    if (!SpeechRecognition) return;
+    this.recognition = new SpeechRecognition();
+    this.recognition.continuous = false;
+    this.recognition.interimResults = true;
+    this.recognition.lang = 'en-IN';
 
-      this.recognition.onresult = (e) => {
-        const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
-        document.getElementById('chat-input').value = transcript;
-      };
+    this.recognition.onresult = (event) => {
+      const results = Array.from(event.results);
+      this.voiceTranscript = results.filter(result => result.isFinal)
+        .map(result => result[0].transcript.trim()).filter(Boolean).join(' ');
+      const interim = results.filter(result => !result.isFinal)
+        .map(result => result[0].transcript.trim()).filter(Boolean).join(' ');
+      const input = document.getElementById('chat-input');
+      if (input) input.value = [this.voiceTranscript, interim].filter(Boolean).join(' ');
+    };
 
-      this.recognition.onend = () => {
-        this.isListening = false;
-        const btn = document.getElementById('voice-btn');
-        if (btn) { btn.textContent = '🎤'; btn.classList.remove('recording'); }
-      };
+    this.recognition.onend = () => {
+      this.isListening = false;
+      this.updateVoiceInputButton();
+      if (this.voiceTranscript.trim() && this.voiceChatEnabled) {
+        this.sendMessage();
+      } else if (this.voiceTranscript.trim()) {
+        showToast('Voice note ready. Review it, then tap send.', 'success');
+      }
+    };
 
-      this.recognition.onerror = (e) => {
-        showToast('Voice input error: ' + e.error, 'error');
-        this.isListening = false;
+    this.recognition.onerror = (event) => {
+      this.isListening = false;
+      this.updateVoiceInputButton();
+      if (event.error === 'aborted') return;
+      const messages = {
+        'not-allowed': 'Allow microphone access to use voice input.',
+        'no-speech': 'No speech detected. Tap the microphone and try again.',
+        'audio-capture': 'No microphone is available on this device.',
+        network: 'Speech recognition needs a working internet connection.'
       };
-    }
+      showToast(messages[event.error] || `Voice input error: ${event.error}`, 'error');
+    };
   },
 
   toggleVoiceInput() {
-    if (!this.recognition) {
+    if (!this.voiceStyle) {
+      this.pendingVoiceAction = 'input';
+      document.getElementById('voice-style-modal')?.classList.add('active');
+      return;
+    }
+    if (!this.recognition && !this.hasAndroidSpeechRecognition()) {
       showToast('Voice input not supported in this browser', 'error');
       return;
     }
     if (this.isListening) {
-      this.recognition.stop();
+      this.stopVoiceRecognition();
     } else {
-      this.recognition.start();
-      this.isListening = true;
-      const btn = document.getElementById('voice-btn');
-      if (btn) { btn.textContent = '⏹'; btn.classList.add('recording'); }
-      showToast('Listening... Speak now!', 'info');
+      this.startVoiceRecognition();
     }
   },
 
+  hasAndroidSpeechRecognition() {
+    try {
+      return Boolean(window.AndroidSpeech?.isRecognitionAvailable());
+    } catch (error) {
+      console.error('Unable to access Android speech recognition:', error);
+      return false;
+    }
+  },
+
+  hasAndroidSpeechSynthesis() {
+    return Boolean(window.AndroidSpeech && typeof window.AndroidSpeech.speakText === 'function');
+  },
+
+  startVoiceRecognition() {
+    if (this.isListening || this.isSending || this.isSpeaking) return;
+    this.voiceTranscript = '';
+    const input = document.getElementById('chat-input');
+    if (input) input.value = '';
+    try {
+      if (this.hasAndroidSpeechRecognition()) {
+        window.AndroidSpeech.startListening('en-IN');
+      } else if (this.recognition) {
+        this.recognition.start();
+      } else {
+        showToast('Voice input is not supported by this browser.', 'error');
+        if (this.voiceChatEnabled) this.setVoiceChatEnabled(false);
+        return;
+      }
+      this.isListening = true;
+      this.updateVoiceInputButton();
+      showToast('Listening… speak now.', 'info');
+    } catch (error) {
+      this.isListening = false;
+      this.updateVoiceInputButton();
+      console.error('Unable to start voice recognition:', error);
+      showToast('Could not start voice input. Check microphone permission and try again.', 'error');
+      if (this.voiceChatEnabled) this.setVoiceChatEnabled(false);
+    }
+  },
+
+  stopVoiceRecognition() {
+    if (!this.isListening) return;
+    try {
+      if (this.hasAndroidSpeechRecognition()) window.AndroidSpeech.stopListening();
+      else this.recognition?.stop();
+    } catch (error) {
+      console.error('Unable to stop voice recognition:', error);
+      showToast('Could not stop voice input cleanly.', 'error');
+    }
+  },
+
+  updateVoiceInputButton() {
+    const button = document.getElementById('voice-btn');
+    if (!button) return;
+    button.textContent = this.isListening ? '⏹' : '🎤';
+    button.classList.toggle('recording', this.isListening);
+    button.setAttribute('aria-label', this.isListening ? 'Stop voice input' : 'Start voice input');
+    button.title = this.isListening ? 'Stop voice input' : 'Voice input';
+  },
+
+  updateVoiceChatButton() {
+    const button = document.getElementById('voice-chat-btn');
+    if (!button) return;
+    button.setAttribute('aria-pressed', String(this.voiceChatEnabled));
+    button.textContent = this.voiceChatEnabled ? '⏹ End voice chat' : '🎙️ Start voice chat';
+  },
+
+  setVoiceChatEnabled(enabled) {
+    this.voiceChatEnabled = enabled;
+    this.updateVoiceChatButton();
+    if (!enabled) {
+      this.stopVoiceRecognition();
+      this.stopSpeaking();
+    }
+  },
+
+  toggleVoiceChat() {
+    if (this.voiceChatEnabled) {
+      this.setVoiceChatEnabled(false);
+      showToast('Voice chat ended.');
+      return;
+    }
+    if (!this.voiceStyle) {
+      this.pendingVoiceAction = 'voice-chat';
+      document.getElementById('voice-style-modal')?.classList.add('active');
+      return;
+    }
+    this.setVoiceChatEnabled(true);
+    this.startVoiceRecognition();
+  },
+
+  selectVoiceStyle(style) {
+    if (!['jarvis', 'friday'].includes(style)) return;
+    try {
+      localStorage.setItem('voice_style', style);
+    } catch (error) {
+      console.error('Unable to save assistant voice style:', error);
+      showToast('Could not save your voice preference on this device.', 'error');
+      return;
+    }
+    this.voiceStyle = style;
+    const setting = document.getElementById('voice-style-setting');
+    if (setting) setting.value = style;
+    document.getElementById('voice-style-modal')?.classList.remove('active');
+    const action = this.pendingVoiceAction;
+    this.pendingVoiceAction = '';
+    if (action === 'voice-chat') this.toggleVoiceChat();
+    else if (action === 'input') this.toggleVoiceInput();
+  },
+
+  dismissVoiceStyle() {
+    this.pendingVoiceAction = '';
+    document.getElementById('voice-style-modal')?.classList.remove('active');
+  },
+
+  onAndroidSpeechResult(text, isFinal) {
+    const transcript = typeof text === 'string' ? text.trim() : '';
+    if (!transcript) return;
+    this.voiceTranscript = transcript;
+    const input = document.getElementById('chat-input');
+    if (input) input.value = transcript;
+    if (isFinal) this.voiceTranscript = transcript;
+  },
+
+  onAndroidSpeechEnd() {
+    this.isListening = false;
+    this.updateVoiceInputButton();
+    if (this.voiceTranscript.trim() && this.voiceChatEnabled) {
+      this.sendMessage();
+    } else if (this.voiceTranscript.trim()) {
+      showToast('Voice note ready. Review it, then tap send.', 'success');
+    }
+  },
+
+  onAndroidSpeechReady() {
+    this.isListening = true;
+    this.updateVoiceInputButton();
+  },
+
+  onAndroidSpeechError(errorCode) {
+    this.isListening = false;
+    this.updateVoiceInputButton();
+    const messages = {
+      '7': 'No speech detected. Tap the microphone and try again.',
+      '8': 'The speech service is busy. Please try again.',
+      '9': 'Allow microphone access to use voice input.',
+      '1': 'Speech recognition needs a working internet connection.',
+      '5': 'Could not start speech recognition. Check your device speech service and try again.'
+    };
+    showToast(messages[String(errorCode)] || 'Voice input failed. Check microphone access and try again.', 'error');
+    if (this.voiceChatEnabled) this.setVoiceChatEnabled(false);
+  },
+
+  onAndroidSpeechChunkEnd(utteranceId) {
+    if (utteranceId !== this.activeUtteranceId || !this.speechNextChunk) return;
+    this.speechNextChunk();
+  },
+
+  onAndroidSpeechPlaybackError(utteranceId) {
+    if (utteranceId && utteranceId !== this.activeUtteranceId) return;
+    this.stopSpeaking();
+    console.error('Android text-to-speech playback failed.');
+    showToast('Could not play the spoken response. Check your device text-to-speech settings.', 'error');
+    if (this.voiceChatEnabled) this.setVoiceChatEnabled(false);
+  },
+
+  getSpeechText(text) {
+    return text
+      .replace(/```[\s\S]*?```/g, ' Code example omitted. ')
+      .replace(/!\[[^\]]*]\([^)]*\)/g, '')
+      .replace(/\[([^\]]+)]\([^)]*\)/g, '$1')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/^\s{0,3}#{1,6}\s*/gm, '')
+      .replace(/^\s*[-*+]\s+/gm, '')
+      .replace(/^\s*\d+[.)]\s+/gm, '')
+      .replace(/[*_~`>#|]/g, ' ')
+      .replace(/\$\$?([^$]+)\$\$?/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+  },
+
+  stopSpeaking() {
+    this.speechToken++;
+    this.isSpeaking = false;
+    this.activeUtteranceId = '';
+    this.speechNextChunk = null;
+    try {
+      this.synth?.cancel();
+      if (this.hasAndroidSpeechSynthesis()) window.AndroidSpeech.stopSpeaking();
+    } catch (error) {
+      console.error('Unable to stop speech playback:', error);
+    }
+  },
+
+  speakText(text, onComplete = null) {
+    const spokenText = this.getSpeechText(text);
+    if (!spokenText) {
+      if (onComplete) onComplete();
+      return;
+    }
+    const nativeSpeech = this.hasAndroidSpeechSynthesis();
+    if (!nativeSpeech && (!this.synth || typeof SpeechSynthesisUtterance === 'undefined')) {
+      showToast('Spoken responses are not supported by this device.', 'error');
+      if (this.voiceChatEnabled) this.setVoiceChatEnabled(false);
+      return;
+    }
+
+    this.stopSpeaking();
+    const token = this.speechToken;
+    const style = this.voiceStyle === 'friday' ? 'friday' : 'jarvis';
+    const voices = this.synth?.getVoices?.() || [];
+    const englishVoices = voices.filter(voice => /^en([_-]|$)/i.test(voice.lang));
+    const voice = englishVoices.find(item => /^en[-_]in/i.test(item.lang))
+      || englishVoices[0];
+    const utteranceChunks = [];
+    let remaining = spokenText;
+    while (remaining.length > 1800) {
+      let splitAt = remaining.lastIndexOf(' ', 1800);
+      if (splitAt < 900) splitAt = 1800;
+      utteranceChunks.push(remaining.slice(0, splitAt).trim());
+      remaining = remaining.slice(splitAt).trim();
+    }
+    if (remaining) utteranceChunks.push(remaining);
+
+    this.isSpeaking = true;
+    let chunkIndex = 0;
+    const speakNext = () => {
+      if (token !== this.speechToken || !this.voiceChatEnabled && onComplete) return;
+      if (chunkIndex >= utteranceChunks.length) {
+        this.isSpeaking = false;
+        this.activeUtteranceId = '';
+        this.speechNextChunk = null;
+        if (onComplete) onComplete();
+        return;
+      }
+      const currentChunkIndex = chunkIndex++;
+      if (nativeSpeech) {
+        const utteranceId = `${token}-${currentChunkIndex}`;
+        this.activeUtteranceId = utteranceId;
+        this.speechNextChunk = speakNext;
+        try {
+          window.AndroidSpeech.speakText(utteranceChunks[currentChunkIndex], style, utteranceId);
+        } catch (error) {
+          this.onAndroidSpeechPlaybackError(utteranceId);
+        }
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(utteranceChunks[currentChunkIndex]);
+      utterance.lang = voice?.lang || 'en-IN';
+      if (voice) utterance.voice = voice;
+      utterance.rate = style === 'friday' ? 1 : 0.92;
+      utterance.pitch = style === 'friday' ? 1.08 : 0.86;
+      utterance.onend = speakNext;
+      utterance.onerror = event => {
+        if (token !== this.speechToken || event.error === 'canceled' || event.error === 'interrupted') return;
+        this.isSpeaking = false;
+        console.error('Speech playback failed:', event.error);
+        showToast('Could not play the spoken response. Check your device voice settings.', 'error');
+        if (this.voiceChatEnabled) this.setVoiceChatEnabled(false);
+      };
+      this.synth.speak(utterance);
+    };
+    speakNext();
+  },
+
   toggleTTS() {
-    if (this.synth.speaking) {
-      this.synth.cancel();
+    if (this.isSpeaking || this.synth?.speaking) {
+      this.stopSpeaking();
       showToast('Speech stopped');
     } else {
       const lastMsg = document.querySelectorAll('.assistant-message .message-text');
       if (lastMsg.length > 0) {
         const text = lastMsg[lastMsg.length - 1].innerText;
-        const utterance = new SpeechSynthesisUtterance(text);
-        this.synth.speak(utterance);
+        this.speakText(text);
         showToast('Reading solution aloud...', 'info');
       }
     }
@@ -1968,6 +2268,7 @@ const App = {
     const apiKey = document.getElementById('settings-api-key')?.value.trim();
     const model = document.getElementById('settings-model')?.value;
     const studyMemory = document.getElementById('study-memory')?.value.trim() || '';
+    const voiceStyle = document.getElementById('voice-style-setting')?.value || '';
 
     if (apiKey) {
       localStorage.setItem('gemini_api_key', apiKey);
@@ -1977,6 +2278,10 @@ const App = {
     }
     try {
       localStorage.setItem('study_memory', studyMemory);
+      if (['', 'jarvis', 'friday'].includes(voiceStyle)) {
+        localStorage.setItem('voice_style', voiceStyle);
+        this.voiceStyle = voiceStyle;
+      }
       showToast('Settings and study memory saved on this device.', 'success');
     } catch (error) {
       console.error('Unable to save study memory:', error);
@@ -1988,9 +2293,11 @@ const App = {
     const apiKeyEl = document.getElementById('settings-api-key');
     const modelEl = document.getElementById('settings-model');
     const memoryEl = document.getElementById('study-memory');
+    const voiceStyleEl = document.getElementById('voice-style-setting');
     if (apiKeyEl) apiKeyEl.value = localStorage.getItem('gemini_api_key') || '';
     if (modelEl) modelEl.value = GeminiAPI.model;
     if (memoryEl) memoryEl.value = localStorage.getItem('study_memory') || '';
+    if (voiceStyleEl) voiceStyleEl.value = this.voiceStyle;
     this.updateSyllabusStatus();
   },
 

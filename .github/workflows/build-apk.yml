@@ -110,6 +110,7 @@ jobs:
             - Official SLRTCE syllabus links, course lists, and verified in-app module names for supported courses; Cyber Security coverage limited to the published first year
             - Searchable Study Hub, syllabus PDF import, and syllabus-aware AI study tools
             - Downloadable module formula sheets, flashcards, mind maps, and notes summaries
+            - Hands-free voice chat with native Android speech recognition and spoken responses
             - Persistent on-device chat history and optional study memory
             - Offline-bundled study tools and browser libraries
             - Fixed Android WebView asset packaging and verified app entry page

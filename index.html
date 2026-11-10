@@ -149,7 +149,7 @@
       <div class="header-actions">
         <button class="icon-btn" onclick="App.startNewChat()" title="Start a new chat" id="clear-btn">✚</button>
         <button class="icon-btn" onclick="App.showSection('history')" title="Chat history">🕐</button>
-        <button class="icon-btn" id="tts-btn" title="Text to Speech">🔊</button>
+        <button class="icon-btn" id="tts-btn" title="Read the latest answer aloud" aria-label="Read the latest answer aloud">🔊</button>
         <button class="icon-btn" onclick="App.toggleTheme()" id="theme-toggle" title="Toggle theme">
           <span id="theme-icon">☀️</span>
         </button>
@@ -169,6 +169,7 @@
         </div>
         <div class="study-hub-grid" id="study-hub-grid">
           <button class="study-hub-card" data-tool-card="ai chat tutor questions image pdf" onclick="App.showSection('chat')"><span>💬</span><strong>AI Tutor</strong><small>Ask questions, attach a photo or PDF, and get explanations.</small></button>
+          <button class="study-hub-card" data-tool-card="voice chat hands free microphone speech speaking listening" onclick="App.showSection('chat');App.toggleVoiceChat()"><span>🎙️</span><strong>Hands-free Voice Chat</strong><small>Speak naturally, hear answers aloud, and continue by voice.</small></button>
           <button class="study-hub-card" data-tool-card="chat history saved conversations" onclick="App.showSection('history')"><span>🕐</span><strong>Chat History</strong><small>Open saved conversations and recent questions.</small></button>
           <button class="study-hub-card" data-tool-card="flashcards generate download remember" onclick="App.showSection('flashcards')"><span>🃏</span><strong>Flashcards</strong><small>Generate, review, and download topic cards.</small></button>
           <button class="study-hub-card" data-tool-card="quiz exam mcq practice" onclick="App.showSection('quiz')"><span>🎯</span><strong>Quiz & Exam Practice</strong><small>Create multiple-choice practice questions.</small></button>
@@ -216,12 +217,13 @@
             <button class="input-btn" onclick="document.getElementById('image-input').click()" title="Upload Image">🖼️</button>
             <button class="input-btn" onclick="App.openCamera()" title="Camera">📷</button>
             <button class="input-btn" onclick="document.getElementById('pdf-input').click()" title="Upload PDF">📄</button>
-            <button class="input-btn voice-btn" id="voice-btn" onclick="App.toggleVoiceInput()" title="Voice Input">🎤</button>
+            <button class="input-btn voice-btn" id="voice-btn" onclick="App.toggleVoiceInput()" title="Voice input" aria-label="Start voice input">🎤</button>
             <button class="input-btn send-btn" onclick="App.sendMessage()" title="Send (Enter)">➤</button>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
-          <span style="font-size:11px;color:var(--text3);">Drag & drop images/PDFs | Enter to send | Shift+Enter for newline</span>
+          <span style="font-size:11px;color:var(--text3);">Tap the mic to dictate, or start hands-free voice chat.</span>
+          <button type="button" class="voice-chat-toggle" id="voice-chat-btn" aria-pressed="false" onclick="App.toggleVoiceChat()">🎙️ Start voice chat</button>
         </div>
       </div>
     </section>
@@ -724,6 +726,17 @@ Newton's Laws of Motion:
             </select>
           </div>
 
+          <div class="settings-section-title">🗣️ Voice chat</div>
+          <div class="settings-row">
+            <label for="voice-style-setting">Assistant voice style</label>
+            <select id="voice-style-setting" class="form-select">
+              <option value="">Ask me the first time I use voice chat</option>
+              <option value="jarvis">Calm and precise (JARVIS-inspired qualities)</option>
+              <option value="friday">Warm and confident (FRIDAY-inspired qualities)</option>
+            </select>
+            <p>Uses voices available on your device. These are style settings, not copies of either character voice. Voice recognition and spoken answers may require internet or device speech services.</p>
+          </div>
+
           <div class="settings-section-title">🧠 Study Memory</div>
           <div class="settings-row">
             <label for="study-memory">Notes for future AI chats</label>
@@ -747,7 +760,7 @@ Newton's Laws of Motion:
               <strong style="color:var(--text);">StudyMind AI</strong> is an intelligent tutor for BTech engineering students.
               It uses Google Gemini AI to provide step-by-step solutions, formula references, practice quizzes, and more.<br><br>
               <strong>Features:</strong> AI Chat • Math Rendering • Image/PDF Upload • Scientific Calculator • 
-              Unit Converter • Formula Sheet • Flashcards • Quizzes • Summarizer • Mind Maps • Periodic Table • Logic Gates<br><br>
+              Unit Converter • Formula Sheet • Flashcards • Quizzes • Summarizer • Mind Maps • Voice Chat • Periodic Table • Logic Gates<br><br>
               <strong>Keyboard Shortcuts:</strong><br>
               • <code>Ctrl+/</code> — Focus chat input<br>
               • <code>Enter</code> — Send message<br>
@@ -824,12 +837,35 @@ Newton's Laws of Motion:
       <label style="font-size:13px;font-weight:500;">Gemini API Key</label>
       <input type="password" id="modal-api-key" class="form-input" placeholder="AIza...">
     </div>
+
     <p style="font-size:12px;color:var(--text3);">
       Get your free key at: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--primary);">aistudio.google.com/app/apikey</a>
     </p>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="App.hideApiKeyModal()">Skip</button>
       <button class="btn btn-primary" onclick="App.saveApiKey()">Save & Start</button>
+    </div>
+  </div>
+</div>
+
+<!-- Voice Style Modal -->
+<div class="modal-overlay" id="voice-style-modal" role="dialog" aria-modal="true" aria-labelledby="voice-style-title">
+  <div class="modal">
+    <div class="logo-icon">🗣️</div>
+    <h2 id="voice-style-title">Choose your assistant voice</h2>
+    <p>Choose a broad speaking style. Your device supplies the voice; this does not reproduce the original JARVIS or FRIDAY character voices.</p>
+    <div class="voice-style-options">
+      <button type="button" class="voice-style-option" onclick="App.selectVoiceStyle('jarvis')">
+        <strong>Calm and precise</strong>
+        <span>Measured pace and a lower, steady tone (JARVIS-inspired qualities)</span>
+      </button>
+      <button type="button" class="voice-style-option" onclick="App.selectVoiceStyle('friday')">
+        <strong>Warm and confident</strong>
+        <span>Clear pace and a warmer, brighter tone (FRIDAY-inspired qualities)</span>
+      </button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="App.dismissVoiceStyle()">Not now</button>
     </div>
   </div>
 </div>
