@@ -106,6 +106,9 @@ jobs:
             StudyMind AI Android app by Vipin Pal, built from commit ${{ github.sha }}.
 
             Included in this build:
+            - University onboarding for Mumbai University and autonomous SLRTCE students
+            - Searchable Study Hub, syllabus PDF import, and syllabus-aware AI study tools
+            - Downloadable module formula sheets, flashcards, mind maps, and notes summaries
             - Persistent on-device chat history and optional study memory
             - Offline-bundled study tools and browser libraries
             - Fixed Android WebView asset packaging and verified app entry page

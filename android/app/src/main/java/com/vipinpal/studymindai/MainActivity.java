@@ -3,6 +3,7 @@ package com.vipinpal.studymindai;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -156,9 +157,10 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = fileChooserParams.createIntent();
                 try {
                     startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE);
-                } catch (Exception e) {
+                } catch (ActivityNotFoundException e) {
                     MainActivity.this.filePathCallback = null;
-                    return false;
+                    filePathCallback.onReceiveValue(null);
+                    Toast.makeText(MainActivity.this, "No app is available to select a file.", Toast.LENGTH_LONG).show();
                 }
                 return true;
             }
@@ -239,11 +241,8 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
             if (filePathCallback == null) return;
             Uri[] results = null;
-            if (resultCode == Activity.RESULT_OK && data != null) {
-                String dataString = data.getDataString();
-                if (dataString != null) {
-                    results = new Uri[]{Uri.parse(dataString)};
-                }
+            if (resultCode == Activity.RESULT_OK) {
+                results = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
             }
             filePathCallback.onReceiveValue(results);
             filePathCallback = null;

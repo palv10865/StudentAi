@@ -2158,6 +2158,87 @@ body {
   .grade-remove { width: 28px; }
 }
 
+/* ---- Study Hub and syllabus profiles ---- */
+.study-hub-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  max-width: 520px;
+  margin-bottom: 18px;
+}
+
+.study-hub-toolbar label {
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.study-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.study-hub-card {
+  min-height: 150px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.study-hub-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  background: var(--surface2);
+}
+
+.study-hub-card[hidden] { display: none; }
+.study-hub-card > span { font-size: 24px; }
+.study-hub-card strong { font-size: 15px; }
+.study-hub-card small { color: var(--text2); font-size: 12px; line-height: 1.5; }
+
+.syllabus-import {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+}
+
+.syllabus-import h3 { font-size: 15px; margin-bottom: 5px; }
+.syllabus-import p { color: var(--text2); font-size: 12px; line-height: 1.5; }
+.syllabus-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.formula-module-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.formula-module-heading .formula-cat-title { margin-bottom: 0; }
+.mindmap-download { display: flex; justify-content: flex-end; margin-top: 16px; }
+.institution-modal { max-height: 90vh; overflow-y: auto; }
+.institution-modal .logo-icon { margin-bottom: 16px; }
+.institution-notice { margin-bottom: 0 !important; font-size: 12px !important; }
+
+@media (max-width: 600px) {
+  .syllabus-import { align-items: stretch; flex-direction: column; }
+  .syllabus-actions { flex-direction: column; }
+  .formula-module-heading { align-items: flex-start; flex-direction: column; }
+}
+
 /* ---- Misc ---- */
 .text-primary { color: var(--primary); }
 .text-accent { color: var(--accent); }

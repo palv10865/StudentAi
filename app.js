@@ -5,6 +5,9 @@ const App = {
   chatSessions: [],
   activeChatId: null,
   chatStorageAvailable: true,
+  institutionProfile: null,
+  syllabusText: '',
+  syllabusFileName: '',
   questionHistory: [],
   currentSubject: 'general',
   currentImage: null,
@@ -14,6 +17,7 @@ const App = {
   isSpeaking: false,
   currentFlashcards: [],
   currentFlashcardIndex: 0,
+  currentMindMap: '',
   currentQuiz: [],
   currentQuizIndex: 0,
   quizScore: 0,
@@ -23,15 +27,19 @@ const App = {
 
   init() {
     this.loadSettings();
+    const needsInstitutionSetup = !this.institutionProfile;
     this.loadSavedConversations();
     this.setupEventListeners();
     this.setupSpeechRecognition();
     GeminiAPI.init();
     this.renderSubjectSelector();
-    this.showSection('chat');
+    this.showSection(needsInstitutionSetup ? 'dashboard' : 'chat');
     this.updateTheme();
     this.renderHistory();
-    this.checkApiKey();
+    this.renderDashboard();
+    this.updateSyllabusStatus();
+    if (needsInstitutionSetup) this.openInstitutionSetup(true);
+    else this.checkApiKey();
     Calculator.init();
     StudyTools.init();
     console.log('StudyMind AI initialized');
@@ -41,6 +49,195 @@ const App = {
     const savedTheme = localStorage.getItem('theme');
     this.isDarkMode = savedTheme !== 'light';
     this.currentSubject = localStorage.getItem('subject') || 'general';
+    this.syllabusText = localStorage.getItem('official_syllabus_text') || '';
+    this.syllabusFileName = localStorage.getItem('official_syllabus_name') || '';
+
+    try {
+      const savedProfile = JSON.parse(localStorage.getItem('institution_profile') || 'null');
+      if (savedProfile && ['mu', 'autonomous'].includes(savedProfile.type)
+          && ['computerEngineering', 'cyberSecurity'].includes(savedProfile.program)
+          && Number.isInteger(Number(savedProfile.semester))
+          && Number(savedProfile.semester) >= 1 && Number(savedProfile.semester) <= 8) {
+        this.institutionProfile = {
+          type: savedProfile.type,
+          program: savedProfile.program,
+          semester: Number(savedProfile.semester)
+        };
+      }
+    } catch (error) {
+      console.error('Unable to load university profile:', error);
+      showToast('University profile could not be read. Please choose your university again.', 'error');
+    }
+  },
+
+  openInstitutionSetup(required = false) {
+    const modal = document.getElementById('institution-modal');
+    if (!modal) return;
+    const typeInput = document.getElementById('institution-type');
+    const programInput = document.getElementById('institution-program');
+    const semesterInput = document.getElementById('institution-semester');
+    if (typeInput) typeInput.value = this.institutionProfile?.type || '';
+    if (programInput) programInput.value = this.institutionProfile?.program || 'computerEngineering';
+    if (semesterInput) semesterInput.value = String(this.institutionProfile?.semester || 1);
+    modal.dataset.required = required ? 'true' : 'false';
+    const cancelButton = document.getElementById('institution-cancel');
+    if (cancelButton) cancelButton.hidden = required;
+    modal.classList.add('active');
+  },
+
+  cancelInstitutionSetup() {
+    const modal = document.getElementById('institution-modal');
+    if (modal?.dataset.required === 'true') return;
+    modal?.classList.remove('active');
+  },
+
+  saveInstitutionProfile() {
+    const type = document.getElementById('institution-type')?.value;
+    const program = document.getElementById('institution-program')?.value;
+    const semester = Number(document.getElementById('institution-semester')?.value);
+    if (!['mu', 'autonomous'].includes(type)
+        || !['computerEngineering', 'cyberSecurity'].includes(program)
+        || !Number.isInteger(semester) || semester < 1 || semester > 8) {
+      showToast('Choose a university, course, and semester to continue.', 'error');
+      return;
+    }
+
+    this.institutionProfile = { type, program, semester };
+    try {
+      localStorage.setItem('institution_profile', JSON.stringify(this.institutionProfile));
+    } catch (error) {
+      console.error('Unable to save university profile:', error);
+      showToast('Could not save your university profile on this device.', 'error');
+      return;
+    }
+
+    document.getElementById('institution-modal')?.classList.remove('active');
+    this.renderDashboard();
+    this.updateSyllabusStatus();
+    this.renderSubjectSelector();
+    if (this.currentSection === 'curriculum') this.renderCurriculum();
+    this.checkApiKey();
+    showToast('University profile saved on this device.', 'success');
+  },
+
+  getInstitutionName() {
+    return this.institutionProfile?.type === 'autonomous'
+      ? 'Autonomous — SLRTCE'
+      : 'Mumbai University (non-autonomous)';
+  },
+
+  getProgramName() {
+    return CurriculumData[this.institutionProfile?.program]?.name || 'Computer Engineering';
+  },
+
+  renderDashboard() {
+    const profile = document.getElementById('dashboard-profile');
+    if (profile) {
+      profile.textContent = this.institutionProfile
+        ? `${this.getInstitutionName()} · ${this.getProgramName()} · Semester ${this.institutionProfile.semester}`
+        : 'Choose your university and course to personalize your study space.';
+    }
+  },
+
+  async importSyllabus(file) {
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showToast('Choose a PDF syllabus file.', 'error');
+      return;
+    }
+    if (typeof pdfjsLib === 'undefined') {
+      showToast('The PDF reader is still loading. Please try again in a moment.', 'error');
+      return;
+    }
+
+    showToast('Reading syllabus PDF...', 'info');
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+      const pages = [];
+      let characterCount = 0;
+      let pagesRead = 0;
+      let textWasLimited = false;
+      const maxCharacters = 120000;
+      const maxPages = 200;
+      for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, maxPages) && characterCount < maxCharacters; pageNumber++) {
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const pageContents = content.items.map(item => item.str).join(' ');
+        const pageText = pageContents.slice(0, maxCharacters - characterCount);
+        if (pageText.length < pageContents.length) textWasLimited = true;
+        pages.push(`[SYLLABUS PAGE ${pageNumber}]\n${pageText}`);
+        characterCount += pageText.length;
+        pagesRead = pageNumber;
+      }
+      const text = pages.join('\n\n').trim();
+      if (!text) {
+        showToast('No selectable text was found. Use a text-based PDF syllabus.', 'error');
+        return;
+      }
+
+      localStorage.setItem('official_syllabus_text', text);
+      localStorage.setItem('official_syllabus_name', file.name);
+      this.syllabusText = text;
+      this.syllabusFileName = file.name;
+      this.updateSyllabusStatus();
+      this.renderDashboard();
+      const partial = pagesRead < pdf.numPages || textWasLimited;
+      showToast(
+        `Syllabus imported (${pagesRead} pages${partial ? '; file text was limited to keep on-device storage manageable' : ''}).`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Unable to import syllabus PDF:', error);
+      showToast(`Could not import syllabus: ${error.message}`, 'error');
+    } finally {
+      const input = document.getElementById('syllabus-file-input');
+      if (input) input.value = '';
+    }
+  },
+
+  updateSyllabusStatus() {
+    const status = document.getElementById('syllabus-status');
+    const settingsStatus = document.getElementById('settings-syllabus-status');
+    const clearButton = document.getElementById('clear-syllabus-btn');
+    const hasSyllabus = Boolean(this.syllabusText);
+    const message = hasSyllabus
+      ? `Imported: ${this.syllabusFileName || 'official syllabus PDF'} · available to AI study tools on this device.`
+      : 'No official syllabus imported. Add your course PDF for syllabus-specific answers; the built-in course guide is a general study aid.';
+    if (status) status.textContent = message;
+    if (settingsStatus) settingsStatus.textContent = hasSyllabus
+      ? `Syllabus: ${this.syllabusFileName || 'Imported PDF'}`
+      : 'No official syllabus PDF imported.';
+    if (clearButton) clearButton.hidden = !hasSyllabus;
+    const settingsProfile = document.getElementById('settings-profile');
+    if (settingsProfile) {
+      settingsProfile.textContent = this.institutionProfile
+        ? `${this.getInstitutionName()} · ${this.getProgramName()} · Semester ${this.institutionProfile.semester}`
+        : 'University and course not selected.';
+    }
+    const curriculumProfile = document.getElementById('curriculum-profile');
+    if (curriculumProfile) {
+      curriculumProfile.textContent = this.institutionProfile
+        ? `${this.getInstitutionName()} · ${this.getProgramName()} · Semester ${this.institutionProfile.semester}`
+        : 'Choose your university and course in Settings.';
+    }
+    const curriculumNotice = document.getElementById('curriculum-notice');
+    if (curriculumNotice) {
+      curriculumNotice.textContent = hasSyllabus
+        ? 'AI study tools can use your imported syllabus. Confirm exam schemes and updates with your college.'
+        : this.institutionProfile?.type === 'autonomous'
+          ? 'The built-in module list is a general guide, not a verified SLRTCE scheme. Import the current official SLRTCE syllabus PDF for exact subjects and modules.'
+          : 'The built-in module list is a general guide. Mumbai University subjects vary by scheme and admission year; import your official syllabus PDF for exact modules.';
+    }
+  },
+
+  clearSyllabus() {
+    if (!confirm('Remove the imported syllabus from this device?')) return;
+    localStorage.removeItem('official_syllabus_text');
+    localStorage.removeItem('official_syllabus_name');
+    this.syllabusText = '';
+    this.syllabusFileName = '';
+    this.updateSyllabusStatus();
+    showToast('Imported syllabus removed from this device.');
   },
 
   checkApiKey() {
@@ -90,6 +287,17 @@ const App = {
     // PDF upload
     document.getElementById('pdf-input')?.addEventListener('change', (e) => {
       this.handlePDFUpload(e.target.files[0]);
+    });
+
+    document.getElementById('syllabus-file-input')?.addEventListener('change', (e) => {
+      this.importSyllabus(e.target.files[0]);
+    });
+
+    document.getElementById('tool-search')?.addEventListener('input', (e) => {
+      const query = e.target.value.trim().toLowerCase();
+      document.querySelectorAll('.study-hub-card').forEach(card => {
+        card.hidden = !card.dataset.toolCard.includes(query);
+      });
     });
 
     // Drag and drop
@@ -172,6 +380,7 @@ const App = {
     if (navEl) navEl.classList.add('active');
 
     // Section-specific init
+    if (section === 'dashboard') this.renderDashboard();
     if (section === 'formulas') this.renderFormulas();
     if (section === 'curriculum') this.renderCurriculum();
     if (section === 'periodic') this.renderPeriodicTable();
@@ -201,9 +410,12 @@ const App = {
   async sendMessage() {
     const input = document.getElementById('chat-input');
     const text = input?.value.trim();
-    if (!text && !this.currentImage) return;
+    if (!text && !this.currentImage && !this.currentPDF) return;
 
-    const userMessage = text || '[Image attached]';
+    const attachmentLabel = this.currentImage && this.currentPDF
+      ? '[Image and PDF attached]'
+      : this.currentImage ? '[Image attached]' : '[PDF attached]';
+    const userMessage = text || attachmentLabel;
     input.value = '';
     input.style.height = 'auto';
 
@@ -529,11 +741,17 @@ const App = {
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      const base64 = e.target.result.split(',')[1];
+      const dataUrl = e.target?.result;
+      if (typeof dataUrl !== 'string' || !dataUrl.includes(',')) {
+        showToast('Could not read this photo. Please try another image.', 'error');
+        return;
+      }
+      const base64 = dataUrl.split(',')[1];
       this.currentImage = { base64, mimeType: file.type };
-      this.showImagePreview(e.target.result);
+      this.showImagePreview(dataUrl);
       showToast('Image ready to send!', 'success');
     };
+    reader.onerror = () => showToast('Could not read this photo. Please try another image.', 'error');
     reader.readAsDataURL(file);
   },
 
@@ -707,7 +925,9 @@ const App = {
     const container = document.getElementById('curriculum-content');
     if (!container) return;
 
-    container.innerHTML = Object.entries(CurriculumData).map(([branchKey, branch]) => `
+    const branchKey = this.institutionProfile?.program || 'computerEngineering';
+    const branch = CurriculumData[branchKey] || CurriculumData.computerEngineering;
+    container.innerHTML = `
       <section class="curriculum-branch">
         <h3 class="curriculum-branch-title">${this.escapeHtml(branch.name)}</h3>
         ${branch.years.map(year => `
@@ -730,14 +950,21 @@ const App = {
           </div>
         `).join('')}
       </section>
-    `).join('');
+    `;
+    this.updateSyllabusStatus();
   },
 
   startCurriculumCourse(course, branch) {
     const input = document.getElementById('chat-input');
     this.showSection('chat');
     if (input) {
-      input.value = `I'm studying ${course} in ${branch}. Explain the key Mumbai University exam topics and show a step-by-step worked example.`;
+      const institution = this.institutionProfile?.type === 'autonomous'
+        ? 'SLRTCE autonomous'
+        : 'Mumbai University';
+      const semester = this.institutionProfile?.semester
+        ? ` My selected semester is ${this.institutionProfile.semester}.`
+        : '';
+      input.value = `I'm studying ${course} in ${branch} under ${institution}.${semester} Use my imported official syllabus if available. If the syllabus does not confirm a course unit or exam pattern, say so instead of guessing. Explain the key topics and show a step-by-step worked example.`;
       input.focus();
       this.autoResize({ target: input });
     }
@@ -753,16 +980,19 @@ const App = {
     if (!display) return;
 
     let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-      <button class="btn btn-secondary" onclick="App.downloadFormulaSheet('${subjectKey}')">⬇️ Download ${this.escapeHtml(data.name)} Formula Sheet</button>
+      <button class="btn btn-secondary" onclick="App.downloadFormulaSheet('${subjectKey}')">⬇️ Download ${this.escapeHtml(data.name)} Formula Book</button>
     </div>`;
-    for (const cat of data.formulas) {
+    for (const [moduleIndex, cat] of data.formulas.entries()) {
       html += `<div class="formula-category">
-        <h3 class="formula-cat-title">📐 ${cat.category}</h3>
+        <div class="formula-module-heading">
+          <h3 class="formula-cat-title">📐 Module ${moduleIndex + 1}: ${this.escapeHtml(cat.category)}</h3>
+          <button class="btn btn-secondary" onclick="App.downloadFormulaModule('${subjectKey}', ${moduleIndex})">⬇️ Module sheet</button>
+        </div>
         <div class="formula-grid">
-          ${cat.items.map(item => `
-            <div class="formula-card" onclick="App.copyFormula('${item.formula.replace(/'/g, "\\'")}')">
-              <div class="formula-name">${item.name}</div>
-              <div class="formula-math">\\[${item.formula}\\]</div>
+          ${cat.items.map((item, formulaIndex) => `
+            <div class="formula-card" onclick="App.copySubjectFormula('${subjectKey}', ${moduleIndex}, ${formulaIndex})">
+              <div class="formula-name">${this.escapeHtml(item.name)}</div>
+              <div class="formula-math">\\[${this.escapeHtml(item.formula)}\\]</div>
             </div>`).join('')}
         </div>
       </div>`;
@@ -794,6 +1024,12 @@ const App = {
     }
   },
 
+  copySubjectFormula(subjectKey, moduleIndex, formulaIndex) {
+    const formula = SubjectData[subjectKey]?.formulas[moduleIndex]?.items[formulaIndex]?.formula;
+    if (formula) this.copyFormula(formula);
+    else showToast('Formula not found.', 'error');
+  },
+
   downloadFormulaSheet(subjectKey) {
     const data = SubjectData[subjectKey];
     if (!data) {
@@ -806,7 +1042,20 @@ const App = {
       category.items.forEach(item => lines.push(`${item.name}: ${item.formula}`));
       lines.push('');
     });
-    this.downloadTextFile(`${subjectKey}-formula-sheet.txt`, lines.join('\n'));
+    this.downloadTextFile(`${subjectKey}-formula-book.txt`, lines.join('\n'));
+  },
+
+  downloadFormulaModule(subjectKey, moduleIndex) {
+    const data = SubjectData[subjectKey];
+    const module = data?.formulas[moduleIndex];
+    if (!module) {
+      showToast('Formula module not found.', 'error');
+      return;
+    }
+    const lines = [`${data.name} — ${module.category}`, 'Created with StudyMind AI', ''];
+    module.items.forEach(item => lines.push(`${item.name}: ${item.formula}`));
+    const safeModule = module.category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'module';
+    this.downloadTextFile(`${subjectKey}-${safeModule}-formulas.txt`, lines.join('\n'));
   },
 
   downloadFlashcards() {
@@ -1089,6 +1338,15 @@ const App = {
     }
   },
 
+  downloadSummary() {
+    const summary = document.getElementById('summary-output')?.innerText.trim();
+    if (!summary) {
+      showToast('Create a summary before downloading.', 'error');
+      return;
+    }
+    this.downloadTextFile('studymind-notes-summary.txt', summary);
+  },
+
   // ============ MIND MAP ============
   async generateMindMap() {
     const topic = document.getElementById('mindmap-topic')?.value.trim();
@@ -1097,13 +1355,27 @@ const App = {
     showToast('Generating mind map...', 'info');
     try {
       const map = await GeminiAPI.generateMindMap(topic);
+      this.currentMindMap = map;
       const output = document.getElementById('mindmap-output');
       if (output) {
-        output.innerHTML = this.renderMindMapTree(map);
+        output.innerHTML = `${this.renderMindMapTree(map)}
+          <div class="mindmap-download">
+            <button class="btn btn-secondary" onclick="App.downloadMindMap()">⬇️ Download Mind Map</button>
+          </div>`;
       }
     } catch(e) {
       showToast('Error: ' + e.message, 'error');
     }
+  },
+
+  downloadMindMap() {
+    if (!this.currentMindMap) {
+      showToast('Generate a mind map before downloading.', 'error');
+      return;
+    }
+    const topic = document.getElementById('mindmap-topic')?.value.trim() || 'study';
+    const safeTopic = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'study';
+    this.downloadTextFile(`${safeTopic}-mind-map.txt`, this.currentMindMap);
   },
 
   renderMindMapTree(text) {
@@ -1615,6 +1887,7 @@ const App = {
     if (apiKeyEl) apiKeyEl.value = localStorage.getItem('gemini_api_key') || '';
     if (modelEl) modelEl.value = GeminiAPI.model;
     if (memoryEl) memoryEl.value = localStorage.getItem('study_memory') || '';
+    this.updateSyllabusStatus();
   },
 
   clearStudyMemory() {

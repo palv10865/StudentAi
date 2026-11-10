@@ -13,6 +13,10 @@ If the website is unavailable, enable **Settings → Pages → Build and deploym
 
 ## Features
 
+- First-run university and course setup for Mumbai University non-autonomous students or autonomous SLRTCE students; change the profile anytime in Settings
+- Study Hub menu with searchable shortcuts to chat history, syllabus, formula books, AI generators, and engineering tools
+- Import an official syllabus PDF for on-device syllabus context in AI chat, flashcards, quizzes, summaries, and mind maps
+- Downloadable flashcards, mind maps, summaries, full formula books, and individual formula topic sheets
 - AI tutor with step-by-step explanations, image/PDF questions, generated quizzes, flashcards, summaries, and mind maps
 - Offline calculator, graph plotter, unit converter, formula sheets, periodic table, logic gates, focus timer, GPA calculator, and curriculum guides
 - Downloadable study materials; the app bundles its interface and study libraries for offline use
@@ -21,7 +25,7 @@ If the website is unavailable, enable **Settings → Pages → Build and deploym
 
 AI answers and generated content need internet access and a Gemini API key. Chat history, study memory, and the key are stored on this device only; there is no account sync or cloud backup. Android uninstall or clearing app data may remove them. The key is sent directly to Google's API and is not secret from someone with access to the device or app. Use a personal key, restrict it in Google AI Studio where available, and do not enter a key on a shared device.
 
-The curriculum is a general guide. Check the official Mumbai University syllabus for your admission year and college.
+Built-in course lists and formula groups are general study guides, not official course schemes. Subject names, modules, and exam rules vary by university, course, and admission year. Import the current official syllabus PDF in **Syllabus & Modules** for syllabus-aware AI study help. Imported syllabus text and student settings stay on the device.
 
 ## Android releases and signing
 
