@@ -129,12 +129,11 @@
         <span>🕐</span>
       </button>
     </div>
-    <div class="creator-badge">
-      <div class="creator-avatar">VP</div>
-      <div class="creator-info">
-        <div class="creator-name">✨ Vipin Pal</div>
-        <div class="creator-role">BTech CSE · Cyber Security</div>
-        <div class="creator-tag">Created by</div>
+    <div class="student-profile-badge">
+      <div class="student-profile-avatar" id="student-profile-avatar">ST</div>
+      <div class="student-profile-info">
+        <div class="student-profile-name" id="student-profile-name">Student</div>
+        <div class="student-profile-role" id="student-profile-role">StudyMind AI student</div>
       </div>
     </div>
   </nav>
@@ -707,7 +706,7 @@ Newton's Laws of Motion:
           <div class="settings-row">
             <p id="settings-profile"></p>
             <p id="settings-syllabus-status"></p>
-            <button class="btn btn-secondary" onclick="App.openInstitutionSetup(false)">Change university or course</button>
+            <button class="btn btn-secondary" onclick="App.openInstitutionSetup(false)">Edit student profile</button>
           </div>
 
           <div class="settings-section-title">🔑 API Configuration</div>
@@ -775,7 +774,11 @@ Newton's Laws of Motion:
   <div class="modal institution-modal">
     <div class="logo-icon">🎓</div>
     <h2>Set up your study profile</h2>
-    <p>Choose your university and course before you start. Import your current official syllabus later to get precise module-based guidance.</p>
+    <p>Your display name and study details are saved only on this device. This is not an account login, and the Gemini API key does not identify its Google account.</p>
+    <div class="settings-row">
+      <label for="student-name">Your name</label>
+      <input id="student-name" class="form-input" type="text" maxlength="40" autocomplete="given-name" placeholder="Enter your name" required>
+    </div>
     <div class="settings-row">
       <label for="institution-type">University type</label>
       <select id="institution-type" class="form-select" required>

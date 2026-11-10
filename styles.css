@@ -1053,12 +1053,20 @@ body {
   gap: 6px;
 }
 
+.curriculum-course-item {
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface2);
+}
+
 .curriculum-course {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 7px;
-  background: var(--surface2);
+  background: transparent;
   color: var(--text2);
   text-align: left;
   cursor: pointer;
@@ -1067,6 +1075,36 @@ body {
 .curriculum-course:hover {
   border-color: var(--primary);
   color: var(--text);
+}
+
+.curriculum-modules {
+  padding: 0 10px 6px;
+  color: var(--text2);
+  font-size: 12px;
+}
+
+.curriculum-modules summary {
+  width: fit-content;
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.curriculum-modules ol {
+  display: grid;
+  gap: 5px;
+  margin: 8px 0 0;
+  padding-left: 22px;
+}
+
+.curriculum-modules p {
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.curriculum-modules a {
+  color: var(--primary);
+  white-space: nowrap;
 }
 
 @media (max-width: 600px) {
@@ -2309,8 +2347,8 @@ body {
   60%, 100% { content: '...'; }
 }
 
-/* ============ CREATOR BADGE ============ */
-.creator-badge {
+/* ============ STUDENT PROFILE BADGE ============ */
+.student-profile-badge {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2322,12 +2360,12 @@ body {
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
-.creator-badge:hover {
+.student-profile-badge:hover {
   background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(168,85,247,0.35));
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(99,102,241,0.3);
 }
-.creator-avatar {
+.student-profile-avatar {
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -2342,18 +2380,11 @@ body {
   box-shadow: 0 2px 8px rgba(99,102,241,0.5);
   letter-spacing: 0.5px;
 }
-.creator-info {
+.student-profile-info {
   flex: 1;
   min-width: 0;
 }
-.creator-tag {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-  margin-bottom: 1px;
-}
-.creator-name {
+.student-profile-name {
   font-size: 13px;
   font-weight: 700;
   background: linear-gradient(135deg, #6366f1, #a855f7);
@@ -2364,7 +2395,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.creator-role {
+.student-profile-role {
   font-size: 10px;
   color: var(--text-muted);
   white-space: nowrap;
@@ -2372,15 +2403,15 @@ body {
   text-overflow: ellipsis;
 }
 
-/* Collapsed sidebar hides creator text */
-.sidebar.collapsed .creator-badge {
+/* Collapsed sidebar hides student profile text */
+.sidebar.collapsed .student-profile-badge {
   padding: 10px;
   justify-content: center;
 }
-.sidebar.collapsed .creator-info {
+.sidebar.collapsed .student-profile-info {
   display: none;
 }
-.sidebar.collapsed .creator-avatar {
+.sidebar.collapsed .student-profile-avatar {
   width: 32px;
   height: 32px;
   font-size: 11px;

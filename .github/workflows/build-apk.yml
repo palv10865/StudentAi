@@ -103,11 +103,11 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}-${{ github.run_attempt }}
           name: "StudyMind AI v1.0.${{ github.run_number }}"
           body: |
-            StudyMind AI Android app by Vipin Pal, built from commit ${{ github.sha }}.
+            StudyMind AI Android app, built from commit ${{ github.sha }}.
 
             Included in this build:
             - University onboarding for Mumbai University and autonomous SLRTCE students
-            - Official SLRTCE Computer Engineering syllabus links and verified course lists; Cyber Security coverage limited to the published first year
+            - Official SLRTCE syllabus links, course lists, and verified in-app module names for supported courses; Cyber Security coverage limited to the published first year
             - Searchable Study Hub, syllabus PDF import, and syllabus-aware AI study tools
             - Downloadable module formula sheets, flashcards, mind maps, and notes summaries
             - Persistent on-device chat history and optional study memory

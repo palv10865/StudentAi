@@ -6,6 +6,7 @@ const App = {
   activeChatId: null,
   chatStorageAvailable: true,
   institutionProfile: null,
+  studentName: '',
   syllabusText: '',
   syllabusFileName: '',
   questionHistory: [],
@@ -27,18 +28,18 @@ const App = {
 
   init() {
     this.loadSettings();
-    const needsInstitutionSetup = !this.institutionProfile;
+    const needsStudentSetup = !this.institutionProfile || !this.studentName;
     this.loadSavedConversations();
     this.setupEventListeners();
     this.setupSpeechRecognition();
     GeminiAPI.init();
     this.renderSubjectSelector();
-    this.showSection(needsInstitutionSetup ? 'dashboard' : 'chat');
+    this.showSection(needsStudentSetup ? 'dashboard' : 'chat');
     this.updateTheme();
     this.renderHistory();
     this.renderDashboard();
     this.updateSyllabusStatus();
-    if (needsInstitutionSetup) this.openInstitutionSetup(true);
+    if (needsStudentSetup) this.openInstitutionSetup(true);
     else this.checkApiKey();
     Calculator.init();
     StudyTools.init();
@@ -49,6 +50,7 @@ const App = {
     const savedTheme = localStorage.getItem('theme');
     this.isDarkMode = savedTheme !== 'light';
     this.currentSubject = localStorage.getItem('subject') || 'general';
+    this.studentName = localStorage.getItem('student_name')?.trim().slice(0, 40) || '';
     this.syllabusText = localStorage.getItem('official_syllabus_text') || '';
     this.syllabusFileName = localStorage.getItem('official_syllabus_name') || '';
 
@@ -76,6 +78,8 @@ const App = {
     const typeInput = document.getElementById('institution-type');
     const programInput = document.getElementById('institution-program');
     const semesterInput = document.getElementById('institution-semester');
+    const studentNameInput = document.getElementById('student-name');
+    if (studentNameInput) studentNameInput.value = this.studentName;
     if (typeInput) typeInput.value = this.institutionProfile?.type || '';
     if (programInput) programInput.value = this.institutionProfile?.program || 'computerEngineering';
     if (semesterInput) semesterInput.value = String(this.institutionProfile?.semester || 1);
@@ -92,32 +96,38 @@ const App = {
   },
 
   saveInstitutionProfile() {
+    const studentNameInput = document.getElementById('student-name');
+    const studentName = studentNameInput?.value.trim().replace(/\s+/g, ' ');
     const type = document.getElementById('institution-type')?.value;
     const program = document.getElementById('institution-program')?.value;
     const semester = Number(document.getElementById('institution-semester')?.value);
-    if (!['mu', 'autonomous'].includes(type)
+    if (!studentName || studentName.length > 40
+        || !['mu', 'autonomous'].includes(type)
         || !['computerEngineering', 'cyberSecurity'].includes(program)
         || !Number.isInteger(semester) || semester < 1 || semester > 8) {
-      showToast('Choose a university, course, and semester to continue.', 'error');
+      showToast('Enter your name and choose a university, course, and semester to continue.', 'error');
       return;
     }
 
-    this.institutionProfile = { type, program, semester };
+    const institutionProfile = { type, program, semester };
     try {
-      localStorage.setItem('institution_profile', JSON.stringify(this.institutionProfile));
+      localStorage.setItem('student_name', studentName);
+      localStorage.setItem('institution_profile', JSON.stringify(institutionProfile));
     } catch (error) {
-      console.error('Unable to save university profile:', error);
-      showToast('Could not save your university profile on this device.', 'error');
+      console.error('Unable to save student profile:', error);
+      showToast('Could not save your student profile on this device.', 'error');
       return;
     }
 
+    this.studentName = studentName;
+    this.institutionProfile = institutionProfile;
     document.getElementById('institution-modal')?.classList.remove('active');
     this.renderDashboard();
     this.updateSyllabusStatus();
     this.renderSubjectSelector();
     if (this.currentSection === 'curriculum') this.renderCurriculum();
     this.checkApiKey();
-    showToast('University profile saved on this device.', 'success');
+    showToast('Student profile saved on this device.', 'success');
   },
 
   getInstitutionName() {
@@ -134,11 +144,29 @@ const App = {
   },
 
   renderDashboard() {
+    this.renderStudentBadge();
     const profile = document.getElementById('dashboard-profile');
     if (profile) {
       profile.textContent = this.institutionProfile
         ? `${this.getInstitutionName()} · ${this.getProgramName()} · Semester ${this.institutionProfile.semester}`
         : 'Choose your university and course to personalize your study space.';
+    }
+  },
+
+  renderStudentBadge() {
+    const name = this.studentName || 'Student';
+    const initials = name === 'Student'
+      ? 'ST'
+      : name.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase();
+    const avatar = document.getElementById('student-profile-avatar');
+    const nameElement = document.getElementById('student-profile-name');
+    const role = document.getElementById('student-profile-role');
+    if (avatar) avatar.textContent = initials;
+    if (nameElement) nameElement.textContent = name;
+    if (role) {
+      role.textContent = this.institutionProfile
+        ? `${this.getProgramName()} · ${this.institutionProfile.type === 'autonomous' ? 'SLRTCE' : 'Mumbai University'}`
+        : 'StudyMind AI student';
     }
   },
 
@@ -216,8 +244,8 @@ const App = {
     const settingsProfile = document.getElementById('settings-profile');
     if (settingsProfile) {
       settingsProfile.textContent = this.institutionProfile
-        ? `${this.getInstitutionName()} · ${this.getProgramName()} · Semester ${this.institutionProfile.semester}`
-        : 'University and course not selected.';
+        ? `${this.studentName || 'Student'} · ${this.getInstitutionName()} · ${this.getProgramName()} · Semester ${this.institutionProfile.semester}`
+        : `${this.studentName || 'Student'} · University and course not selected.`;
     }
     const curriculumProfile = document.getElementById('curriculum-profile');
     if (curriculumProfile) {
@@ -232,11 +260,11 @@ const App = {
         const studyNote = hasSyllabus
           ? ' AI study tools can use your imported syllabus text; confirm updates with your college.'
           : ' If an official PDF is available for your year, download and import it for syllabus-specific AI study.';
-        curriculumNotice.textContent = `${branch?.notice || 'Use the official SLRTCE syllabus links below.'} Detailed module contents and electives are in the linked PDFs.${studyNote}`;
+        curriculumNotice.textContent = `${branch?.notice || 'Use the official SLRTCE syllabus links below.'} Expand a subject to view verified module names when available; use the PDF for the complete syllabus and elective details.${studyNote}`;
       } else {
         curriculumNotice.textContent = hasSyllabus
           ? 'AI study tools can use your imported syllabus. Confirm exam schemes and updates with your college.'
-          : 'The built-in module list is a general guide. Mumbai University subjects vary by scheme and admission year; import your official syllabus PDF for exact modules.';
+          : 'Mumbai University subjects and module names vary by scheme and admission year; import your official syllabus PDF to confirm the modules.';
       }
     }
   },
@@ -989,10 +1017,29 @@ const App = {
                   <div class="curriculum-course-list">
                     ${semester.subjects.map(subject => {
                       const course = typeof subject === 'string' ? subject : subject.name;
+                      const modules = this.institutionProfile?.type === 'autonomous'
+                        ? SLRTCECourseModules[branchKey]?.[year.name]?.[course]
+                        : undefined;
+                      const moduleLabel = modules?.length
+                        ? `Modules · ${modules.length}`
+                        : this.institutionProfile?.type === 'autonomous'
+                          ? 'Module list not available in app'
+                          : 'Module details vary by scheme';
                       return `
-                        <button class="curriculum-course" onclick="App.startCurriculumCourse(${JSON.stringify(course)}, ${JSON.stringify(branch.name)}, ${JSON.stringify(semester.name)}, ${JSON.stringify(year.revision || '')}, ${JSON.stringify(year.syllabusUrl || '')})">
-                          ${this.escapeHtml(course)} <span aria-hidden="true">→</span>
-                        </button>
+                        <div class="curriculum-course-item">
+                          <button class="curriculum-course" onclick="App.startCurriculumCourse(${JSON.stringify(course)}, ${JSON.stringify(branch.name)}, ${JSON.stringify(semester.name)}, ${JSON.stringify(year.revision || '')}, ${JSON.stringify(year.syllabusUrl || '')})">
+                            ${this.escapeHtml(course)} <span aria-hidden="true">→</span>
+                          </button>
+                          <details class="curriculum-modules">
+                            <summary>${moduleLabel}</summary>
+                            ${modules?.length
+                              ? `<ol>${modules.map(module => `<li>${this.escapeHtml(module)}</li>`).join('')}</ol>`
+                              : `<p>${this.institutionProfile?.type === 'autonomous'
+                                ? 'A verified module list is not available in this in-app view. Check the linked official syllabus PDF.'
+                                : 'Mumbai University subjects vary by scheme and year. Choose the applicable syllabus to confirm module names.'}
+                                ${year.syllabusUrl ? `<a href="${this.escapeHtml(year.syllabusUrl)}" target="_blank" rel="noopener">Open official syllabus PDF</a>` : ''}</p>`}
+                          </details>
+                        </div>
                       `;
                     }).join('')}
                   </div>

@@ -1,6 +1,6 @@
 # StudyMind AI
 
-An Android and web study assistant for engineering students, created by Vipin Pal.
+An Android and web study assistant for engineering students.
 
 ## Download and website
 
@@ -21,11 +21,11 @@ If the website is unavailable, enable **Settings → Pages → Build and deploym
 - Offline calculator, graph plotter, unit converter, formula sheets, periodic table, logic gates, focus timer, GPA calculator, and curriculum guides
 - Downloadable study materials; the app bundles its interface and study libraries for offline use
 - Saved chat text conversations and optional tutor memory persist locally until deleted (uploaded images and PDFs are not stored)
-- Android app with a 2.5-second creator splash screen
+- Android app with a 2.5-second launch screen
 
 AI answers and generated content need internet access and a Gemini API key. Chat history, study memory, and the key are stored on this device only; there is no account sync or cloud backup. Android uninstall or clearing app data may remove them. The key is sent directly to Google's API and is not secret from someone with access to the device or app. Use a personal key, restrict it in Google AI Studio where available, and do not enter a key on a shared device.
 
-Mumbai University course lists and formula groups remain general study guides because subjects vary by scheme and admission year. For autonomous SLRTCE students, **Syllabus & Modules** links the official Computer Engineering syllabus PDF for each year and displays the subjects from those documents; detailed modules and elective rules are in the PDFs. SLRTCE currently publishes only the first-year Cyber Security syllabus, so later years are not guessed or shown as official. Import the relevant PDF for syllabus-aware AI study help. Imported syllabus text and student settings stay on the device.
+Mumbai University course lists and formula groups remain general study guides because subjects vary by scheme and admission year. For autonomous SLRTCE students, **Syllabus & Modules** links the official syllabus PDFs and expands verified module names under supported courses. Use the linked PDF for the complete syllabus and elective details, including courses whose module names are not yet listed in-app. SLRTCE currently publishes only the first-year Cyber Security syllabus, so later years are not guessed or shown as official. Import the relevant PDF for syllabus-aware AI study help. Imported syllabus text and student settings stay on the device.
 
 ## Android releases and signing
 

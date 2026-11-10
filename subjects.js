@@ -274,6 +274,49 @@ const CurriculumData = {
   }
 };
 
+const SLRTCECourseModules = {
+  computerEngineering: {
+    'Year 1': {
+      'Engineering Mathematics I': ['Matrices', 'System of Linear Equations', 'Eigen values and Eigen vectors', 'Similarity and diagonalization of matrix', 'Partial Differentiation', 'Complex Variables – Differentiation'],
+      'Engineering Physics': ['Quantum Physics', 'Optics for Engineers', 'Lasers and Fiber Optic System', 'Physics of Semiconductor', 'Physics of Sensors', 'Nanotechnology and Nano-computing'],
+      'Engineering Mechanics': ['Centroid and Moment of Inertia', 'Force and System of Forces', 'Equilibrium and Friction', 'Kinematics of Particles and Rigid Bodies', 'Kinetics of Particles', 'Introduction to Robot Kinematics'],
+      'Structured Programming Approach': ['Fundamentals of C Programming', 'Control Structures', 'Functions and Parameter Passing', 'Arrays, Strings and Structures', 'Pointers', 'Files'],
+      'Professional Communication & Ethics': ['Communication Dynamics', 'Active Listening & Interpersonal Skills', 'Professional Speaking Skills', 'Reading and Text Skills', 'Technical & Business Writing Skills', 'Ethics in Professional and Community Context'],
+      'Engineering Mathematics II': ['Differential Equations', 'Multiple Integral – I', 'Multiple Integral – II', 'Probability Distribution', 'Statistical Techniques', 'Numerical Methods'],
+      'Engineering Chemistry': ['Water', 'Polymers', 'Corrosion', 'Alloys & Lubricants', 'Fuels', 'Chemistry of Engineering Materials'],
+      'Digital Logic & Computer Organization (DLCO)': ['Computer Fundamentals', 'Design of Combinational Circuits', 'Introduction to Computer Organization', 'Memory Organization', 'Data Representation', 'I/O Organization'],
+      'Universal Human Values': ['Holistic Growth of an Individual', 'Self and Harmony', 'Social Equilibrium', 'Shared Values of the Human Order', 'Human–Nature Relationship', 'Integrating Universal Human Values'],
+      'Indian Knowledge System': ['Introduction to the Indian Knowledge System', 'Development of Scientific Thoughts in Ancient India', 'Development of Arts & Culture in India', 'Good Governance in Ancient India', 'Contribution of Indian Scientists & Nobel Laureates', 'Sustainable Practices in Ancient India']
+    },
+    'Year 2': {
+      'Discrete Mathematics and Graph Theory': ['Elementary Number Theory', 'Functions and Mathematical Relations', 'Fundamental Principle of Counting', 'Algebraic Structures', 'Graph Theory', 'Coding Theory'],
+      'Analysis of Algorithm': ['Introduction to Algorithms', 'Divide and Conquer Approach', 'Greedy Method Approach', 'Dynamic Programming', 'Backtracking and Branch and Bound', 'String Matching Algorithms'],
+      'Database Management System': ['Fundamentals of Data Modelling & E-R Design', 'Relational Model and Relational Algebra', 'Structured Query Language (SQL)', 'Normalization and Database Design', 'Transaction Management and Concurrency Control', 'Introduction to Modern Databases'],
+      'Object Oriented Programming': ['Introduction to Java Programming', 'Classes and Objects, Arrays and Strings', 'Inheritance, Interface and Packages', 'Exception Handling', 'Multithreading', 'GUI Programming in Java'],
+      'Sampling Theory and Optimization': ['Sampling Theory – I', 'Sampling Theory – II', 'Linear Programming Problems', 'Nonlinear Programming Problems', 'Markov Chains', 'Queuing Theory'],
+      'Software Engineering & Project Management': ['Introduction to Software Engineering', 'Requirements Engineering and Analysis', 'Software Design and Architecture', 'Software Testing and Quality Assurance', 'Software Project Management', 'Practical Application']
+    },
+    'Year 3': {
+      'Theory of Computation': ['Basic Concepts and Finite Automata', 'Regular Expressions', 'Grammars and Context-Free Languages', 'Pushdown Automata', 'Turing Machine', 'Undecidability'],
+      'Computer Networks': ['Introduction to Computer Networks', 'Circuit and Packet Switching', 'Data Link Layer', 'Network Layer', 'Transport Layer', 'Application Layer'],
+      'Data Warehousing and Mining': ['Data Warehousing', 'Introduction to Data Mining', 'Classification', 'Clustering', 'Frequent Patterns and Association', 'Big Data Analytics'],
+      'Compiler Construction': ['Introduction to System Software & Assemblers', 'Macros and Macro Processor', 'Loaders and Linkers', 'Compiler – Analysis Phase', 'Compiler – Synthesis Phase', 'Modern Compiler Technologies & Advanced Runtime Systems'],
+      'Machine Learning': ['Introduction to Machine Learning', 'Data Preprocessing', 'Supervised Learning', 'Advanced Supervised Learning', 'Unsupervised Learning', 'Reinforcement Learning']
+    },
+    'Year 4': {
+      'Machine Learning': ['Introduction to Machine Learning', 'Learning with Regression and Trees', 'Ensemble Learning', 'Learning with Classification', 'Learning with Clustering', 'Dimensionality Reduction'],
+      'Distributed Computing': ['Introduction to Distributed Systems', 'Communication', 'Synchronization', 'Resource and Process Management', 'Replication, Consistency and Fault Tolerance', 'Distributed File Systems'],
+    }
+  },
+  cyberSecurity: {
+    'Year 1': {
+      'Engineering Mathematics I': ['Matrices', 'System of Linear Equations', 'Eigen values and Eigen vectors', 'Similarity and diagonalization of matrix', 'Partial Differentiation', 'Complex Variables – Differentiation'],
+      'Engineering Mechanics': ['Centroid and Moment of Inertia', 'Force and System of Forces', 'Equilibrium and Friction', 'Kinematics of Particles and Rigid Bodies', 'Kinetics of Particles', 'Introduction to Robot Kinematics'],
+      'Engineering Physics': ['Quantum Physics', 'Optics for Engineers', 'Lasers and Fiber Optic System', 'Physics of Semiconductor', 'Physics of Sensors', 'Nanotechnology and Nano-computing']
+    }
+  }
+};
+
 const SLRTCECurriculumData = {
   computerEngineering: {
     name: 'Computer Engineering',

@@ -51,14 +51,6 @@
             android:textSize="28sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="@string/creator_credit"
-            android:textColor="#b8b8d0"
-            android:textSize="16sp" />
-
         <ProgressBar
             android:layout_width="40dp"
             android:layout_height="40dp"
