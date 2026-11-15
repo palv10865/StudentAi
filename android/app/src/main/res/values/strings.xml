@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">StudyMind AI</string>
-    <string name="app_description">BTech AI Tutor</string>
+    <string name="app_name">BTech AI</string>
+    <string name="app_description">Engineering Study Assistant</string>
 </resources>

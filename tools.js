@@ -360,6 +360,208 @@ const LogicGates = {
   }
 };
 
+const EngineeringTools = {
+  resistorColors: [
+    { name: 'Black', value: 0 },
+    { name: 'Brown', value: 1 },
+    { name: 'Red', value: 2 },
+    { name: 'Orange', value: 3 },
+    { name: 'Yellow', value: 4 },
+    { name: 'Green', value: 5 },
+    { name: 'Blue', value: 6 },
+    { name: 'Violet', value: 7 },
+    { name: 'Gray', value: 8 },
+    { name: 'White', value: 9 }
+  ],
+  multipliers: [
+    { name: 'Black (×1)', value: 1 },
+    { name: 'Brown (×10)', value: 10 },
+    { name: 'Red (×100)', value: 100 },
+    { name: 'Orange (×1k)', value: 1000 },
+    { name: 'Yellow (×10k)', value: 10000 },
+    { name: 'Green (×100k)', value: 100000 },
+    { name: 'Blue (×1M)', value: 1000000 },
+    { name: 'Violet (×10M)', value: 10000000 },
+    { name: 'Gold (×0.1)', value: 0.1 },
+    { name: 'Silver (×0.01)', value: 0.01 }
+  ],
+  tolerances: [
+    { name: 'Brown (±1%)', value: 1 },
+    { name: 'Red (±2%)', value: 2 },
+    { name: 'Green (±0.5%)', value: 0.5 },
+    { name: 'Blue (±0.25%)', value: 0.25 },
+    { name: 'Violet (±0.1%)', value: 0.1 },
+    { name: 'Gray (±0.05%)', value: 0.05 },
+    { name: 'Gold (±5%)', value: 5 },
+    { name: 'Silver (±10%)', value: 10 }
+  ],
+
+  init() {
+    const digitOptions = this.resistorColors
+      .map(color => `<option value="${color.value}">${color.name}</option>`).join('');
+    ['resistor-band-1', 'resistor-band-2'].forEach(id => {
+      const select = document.getElementById(id);
+      if (select) select.innerHTML = digitOptions;
+    });
+    const multiplier = document.getElementById('resistor-multiplier');
+    if (multiplier) {
+      multiplier.innerHTML = this.multipliers
+        .map((item, index) => `<option value="${index}">${item.name}</option>`).join('');
+    }
+    const tolerance = document.getElementById('resistor-tolerance');
+    if (tolerance) {
+      tolerance.innerHTML = this.tolerances
+        .map((item, index) => `<option value="${index}">${item.name}</option>`).join('');
+    }
+
+    document.getElementById('resistor-band-1').value = '1';
+    document.getElementById('resistor-band-2').value = '0';
+    document.getElementById('resistor-multiplier').value = String(this.multipliers.findIndex(item => item.value === 100));
+    document.getElementById('resistor-tolerance').value = String(this.tolerances.findIndex(item => item.value === 5));
+    ['resistor-band-1', 'resistor-band-2', 'resistor-multiplier', 'resistor-tolerance']
+      .forEach(id => document.getElementById(id)?.addEventListener('change', () => this.decodeResistor()));
+    this.decodeResistor();
+  },
+
+  calculateOhmsLaw() {
+    const fields = [
+      { id: 'ohms-voltage', name: 'Voltage', symbol: 'V' },
+      { id: 'ohms-current', name: 'Current', symbol: 'I' },
+      { id: 'ohms-resistance', name: 'Resistance', symbol: 'R' }
+    ].map(field => ({ ...field, text: document.getElementById(field.id)?.value.trim() || '' }));
+    const known = fields.filter(field => field.text !== '');
+    const result = document.getElementById('ohms-result');
+    if (known.length !== 2) {
+      showToast('Enter exactly two of voltage, current, and resistance.', 'error');
+      return;
+    }
+
+    const values = {};
+    for (const field of known) {
+      const value = Number(field.text);
+      if (!Number.isFinite(value) || value < 0) {
+        showToast(`${field.name} must be a non-negative number.`, 'error');
+        return;
+      }
+      values[field.symbol] = value;
+    }
+
+    if (values.V !== undefined && values.I !== undefined) {
+      if (values.I === 0) return showToast('Current must be greater than zero to calculate resistance.', 'error');
+      values.R = values.V / values.I;
+    } else if (values.V !== undefined && values.R !== undefined) {
+      if (values.R === 0) return showToast('Resistance must be greater than zero to calculate current.', 'error');
+      values.I = values.V / values.R;
+    } else {
+      values.V = values.I * values.R;
+    }
+    values.P = values.V * values.I;
+    if (result) {
+      result.textContent = `Voltage ${this.formatNumber(values.V)} V · Current ${this.formatNumber(values.I)} A · Resistance ${this.formatNumber(values.R)} Ω · Power ${this.formatNumber(values.P)} W`;
+    }
+  },
+
+  decodeResistor() {
+    const first = Number(document.getElementById('resistor-band-1')?.value);
+    const second = Number(document.getElementById('resistor-band-2')?.value);
+    const multiplierIndex = Number(document.getElementById('resistor-multiplier')?.value);
+    const toleranceIndex = Number(document.getElementById('resistor-tolerance')?.value);
+    const multiplier = this.multipliers[multiplierIndex];
+    const tolerance = this.tolerances[toleranceIndex];
+    const result = document.getElementById('resistor-result');
+    if (!Number.isInteger(first) || !Number.isInteger(second) || !multiplier || !tolerance || !result) return;
+
+    const resistance = (first * 10 + second) * multiplier.value;
+    const bandNames = this.resistorColors;
+    result.textContent = `${bandNames[first].name} · ${bandNames[second].name} · ${multiplier.name.split(' (')[0]} · ${tolerance.name.split(' (')[0]} = ${this.formatResistance(resistance)} ±${tolerance.value}%`;
+  },
+
+  formatResistance(value) {
+    if (value >= 1e6) return `${this.formatNumber(value / 1e6)} MΩ`;
+    if (value >= 1e3) return `${this.formatNumber(value / 1e3)} kΩ`;
+    if (value < 1) return `${this.formatNumber(value * 1e3)} mΩ`;
+    return `${this.formatNumber(value)} Ω`;
+  },
+
+  formatNumber(value) {
+    return String(Number(value.toPrecision(5)));
+  },
+
+  calculateResistorNetwork() {
+    const rawValues = document.getElementById('network-resistances')?.value.trim() || '';
+    const mode = document.getElementById('network-mode')?.value;
+    const result = document.getElementById('network-result');
+    const resistances = rawValues.split(/[,\s;]+/).filter(Boolean).map(Number);
+    if (resistances.length < 2 || resistances.some(value => !Number.isFinite(value) || value <= 0) ||
+        !['series', 'parallel'].includes(mode)) {
+      showToast('Enter at least two positive resistance values, separated by commas or spaces.', 'error');
+      return;
+    }
+
+    const equivalent = mode === 'series'
+      ? resistances.reduce((total, value) => total + value, 0)
+      : 1 / resistances.reduce((total, value) => total + 1 / value, 0);
+    if (!Number.isFinite(equivalent) || equivalent <= 0) {
+      showToast('Could not calculate that resistor network. Check the entered values.', 'error');
+      return;
+    }
+    if (result) result.textContent = `${mode === 'series' ? 'Series' : 'Parallel'} equivalent resistance: ${this.formatResistance(equivalent)} (${resistances.length} resistors)`;
+  },
+
+  calculateRcTiming() {
+    const resistanceText = document.getElementById('rc-resistance')?.value.trim() || '';
+    const capacitanceText = document.getElementById('rc-capacitance')?.value.trim() || '';
+    const resistance = Number(resistanceText);
+    const capacitance = Number(capacitanceText);
+    const result = document.getElementById('rc-result');
+    if (!resistanceText || !capacitanceText || !Number.isFinite(resistance) ||
+        !Number.isFinite(capacitance) || resistance <= 0 || capacitance <= 0) {
+      showToast('Enter positive resistance and capacitance values.', 'error');
+      return;
+    }
+
+    const timeConstant = resistance * capacitance / 1e6;
+    const cutoffFrequency = 1 / (2 * Math.PI * timeConstant);
+    if (!Number.isFinite(timeConstant) || !Number.isFinite(cutoffFrequency)) {
+      showToast('The RC values are outside the supported calculation range.', 'error');
+      return;
+    }
+    const timeDisplay = timeConstant >= 1
+      ? `${this.formatNumber(timeConstant)} s`
+      : `${this.formatNumber(timeConstant * 1000)} ms`;
+    if (result) result.textContent = `Time constant τ: ${timeDisplay} · Cutoff frequency f₍c₎: ${this.formatNumber(cutoffFrequency)} Hz`;
+  },
+
+  convertBase() {
+    const input = document.getElementById('base-value')?.value.trim().toUpperCase() || '';
+    const from = Number(document.getElementById('base-from')?.value);
+    const to = Number(document.getElementById('base-to')?.value);
+    const result = document.getElementById('base-result');
+    if (!input || ![2, 8, 10, 16].includes(from) || ![2, 8, 10, 16].includes(to)) {
+      showToast('Enter an integer and choose a supported number base.', 'error');
+      return;
+    }
+
+    const negative = input.startsWith('-');
+    const digits = input.replace(/^[+-]/, '');
+    const validDigits = { 2: /^[01]+$/, 8: /^[0-7]+$/, 10: /^\d+$/, 16: /^[0-9A-F]+$/ };
+    if (!validDigits[from].test(digits)) {
+      showToast(`That value is not a valid base-${from} integer.`, 'error');
+      return;
+    }
+
+    const prefixes = { 2: '0b', 8: '0o', 10: '', 16: '0x' };
+    try {
+      const parsed = BigInt(`${prefixes[from]}${digits}`);
+      const converted = `${negative ? '-' : ''}${parsed.toString(to).toUpperCase()}`;
+      if (result) result.textContent = `${converted} (base ${to})`;
+    } catch (error) {
+      console.error('Number base conversion failed:', error);
+      showToast('Could not convert that number. Check the value and try again.', 'error');
+    }
+  }
+};
+
 // ============ STUDY PLANNER ============
 const StudyTools = {
   timerId: null,

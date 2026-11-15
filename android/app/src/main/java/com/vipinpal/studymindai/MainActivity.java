@@ -55,9 +55,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 2;
     private static final int DOWNLOAD_FILE_REQUEST_CODE = 3;
     private static final int NATIVE_SPEECH_PERMISSION_REQUEST_CODE = 4;
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 5;
     private static final String APP_ASSET_HOST = "appassets.androidplatform.net";
     private String pendingDownloadContent;
     private PermissionRequest pendingAudioPermissionRequest;
+    private PermissionRequest pendingCameraPermissionRequest;
     private SpeechRecognizer speechRecognizer;
     private TextToSpeech textToSpeech;
     private final ArrayDeque<Runnable> pendingSpeechTasks = new ArrayDeque<>();
@@ -116,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setUserAgentString(
-            "Mozilla/5.0 (Linux; Android " + Build.VERSION.RELEASE + "; StudyMindAI) " +
+            "Mozilla/5.0 (Linux; Android " + Build.VERSION.RELEASE + "; BTechAI) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
         );
         webView.addJavascriptInterface(new AndroidDownloadBridge(), "AndroidDownload");
@@ -155,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame()) {
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(MainActivity.this, "Unable to load StudyMind AI.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Unable to load BTech AI.", Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -188,27 +190,46 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPermissionRequest(PermissionRequest request) {
                 String[] resources = request.getResources();
-                if (!APP_ASSET_HOST.equals(request.getOrigin().getHost())
-                        || resources.length != 1
-                        || !PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[0])) {
+                if (!APP_ASSET_HOST.equals(request.getOrigin().getHost()) || resources.length != 1) {
                     request.deny();
                     return;
                 }
 
-                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[0])) {
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        request.grant(resources);
+                        return;
+                    }
+                    if (pendingAudioPermissionRequest != null) {
+                        request.deny();
+                        return;
+                    }
+                    pendingAudioPermissionRequest = request;
+                    ActivityCompat.requestPermissions(
+                        MainActivity.this,
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        PERMISSION_REQUEST_CODE
+                    );
+                    return;
+                }
+
+                if (!PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resources[0])) {
+                    request.deny();
+                    return;
+                }
+                if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                     request.grant(resources);
                     return;
                 }
-
-                if (pendingAudioPermissionRequest != null) {
+                if (pendingCameraPermissionRequest != null) {
                     request.deny();
                     return;
                 }
-                pendingAudioPermissionRequest = request;
+                pendingCameraPermissionRequest = request;
                 ActivityCompat.requestPermissions(
                     MainActivity.this,
-                    new String[]{Manifest.permission.RECORD_AUDIO},
-                    PERMISSION_REQUEST_CODE
+                    new String[]{Manifest.permission.CAMERA},
+                    CAMERA_PERMISSION_REQUEST_CODE
                 );
             }
 
@@ -233,6 +254,18 @@ public class MainActivity extends AppCompatActivity {
                 startNativeSpeechRecognition(pendingSpeechLanguage);
             } else {
                 evaluateSpeechCallback("onAndroidSpeechError", "9");
+            }
+            return;
+        }
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            PermissionRequest request = pendingCameraPermissionRequest;
+            pendingCameraPermissionRequest = null;
+            if (request == null) return;
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
+            } else {
+                request.deny();
             }
             return;
         }
@@ -306,6 +339,8 @@ public class MainActivity extends AppCompatActivity {
             textToSpeech.shutdown();
             textToSpeech = null;
         }
+        if (pendingAudioPermissionRequest != null) pendingAudioPermissionRequest.deny();
+        if (pendingCameraPermissionRequest != null) pendingCameraPermissionRequest.deny();
         super.onDestroy();
     }
 
@@ -336,14 +371,24 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void speakNativeText(String text, String style, String utteranceId) {
+    private void speakNativeText(String text, String style, String utteranceId, float pitch, float rate) {
         if (textToSpeech == null || textToSpeechFailed) {
             evaluateSpeechCallback("onAndroidSpeechPlaybackError", utteranceId);
             return;
         }
         boolean warmStyle = "friday".equals(style);
-        textToSpeech.setPitch(warmStyle ? 1.08f : 0.86f);
-        textToSpeech.setSpeechRate(warmStyle ? 1.0f : 0.92f);
+        Locale preferredLocale = Locale.forLanguageTag(warmStyle ? "en-US" : "en-GB");
+        int languageStatus = textToSpeech.setLanguage(preferredLocale);
+        if (languageStatus == TextToSpeech.LANG_MISSING_DATA
+                || languageStatus == TextToSpeech.LANG_NOT_SUPPORTED) {
+            textToSpeech.setLanguage(Locale.forLanguageTag("en-IN"));
+        }
+        float defaultPitch = warmStyle ? 1.05f : 0.62f;
+        float defaultRate = warmStyle ? 1.0f : 0.86f;
+        textToSpeech.setPitch(Float.isNaN(pitch) || Float.isInfinite(pitch)
+                ? defaultPitch : Math.max(0.5f, Math.min(2.0f, pitch)));
+        textToSpeech.setSpeechRate(Float.isNaN(rate) || Float.isInfinite(rate)
+                ? defaultRate : Math.max(0.5f, Math.min(2.0f, rate)));
         int result = textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId);
         if (result == TextToSpeech.ERROR) {
             evaluateSpeechCallback("onAndroidSpeechPlaybackError", utteranceId);
@@ -458,7 +503,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public void speakText(String text, String style, String utteranceId) {
+        public void speakText(String text, String style, String utteranceId, float pitch, float rate) {
             if (text == null || utteranceId == null || text.length() > 2_000) {
                 runOnUiThread(() ->
                     evaluateSpeechCallback("onAndroidSpeechPlaybackError", utteranceId == null ? "" : utteranceId)
@@ -466,7 +511,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             runOnUiThread(() -> {
-                Runnable task = () -> speakNativeText(text, style, utteranceId);
+                Runnable task = () -> speakNativeText(text, style, utteranceId, pitch, rate);
                 if (textToSpeechReady) task.run();
                 else if (pendingSpeechTasks.size() < 3) pendingSpeechTasks.addLast(task);
                 else evaluateSpeechCallback("onAndroidSpeechPlaybackError", utteranceId);

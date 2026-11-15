@@ -1,6 +1,6 @@
-# StudyMind AI
+# BTech AI
 
-An Android and web study assistant for engineering students.
+An Android and web engineering study assistant with syllabus-aware learning guides, an adjustable voice tutor, and offline engineering tools.
 
 ## Download and website
 
@@ -16,15 +16,17 @@ If the website is unavailable, enable **Settings → Pages → Build and deploym
 - First-run university and course setup for Mumbai University non-autonomous students or autonomous SLRTCE students; change the profile anytime in Settings
 - Study Hub menu with searchable shortcuts to chat history, syllabus, formula books, AI generators, and engineering tools
 - Import an official syllabus PDF for on-device syllabus context in AI chat, flashcards, quizzes, summaries, and mind maps
+- Expand supported SLRTCE course topics and build self-study guides with learning goals, prerequisites, worked examples, practice questions, and revision plans; general guidance is clearly distinguished from imported official syllabus content
 - Downloadable flashcards, mind maps, summaries, full formula books, and individual formula topic sheets
 - AI tutor with step-by-step explanations, image/PDF questions, generated quizzes, flashcards, summaries, and mind maps
-- Hands-free voice chat with speech-to-text, spoken answers, and selectable device voice styles (calm/precise or warm/confident)
-- Offline calculator, graph plotter, unit converter, formula sheets, periodic table, logic gates, focus timer, GPA calculator, and curriculum guides
+- Hands-free voice chat with speech-to-text, spoken answers, selectable English device voices, adjustable pitch and pace, and calm or warm delivery styles
+- Camera capture in a live in-app preview, alongside a separate photo-library upload option
+- Offline calculator, graph plotter, unit converter, formula sheets, periodic table, logic gates, focus timer, GPA calculator, Ohm's law workbench, resistor-network calculator, resistor decoder, RC time-constant calculator, and binary/octal/decimal/hex converter
 - Downloadable study materials; the app bundles its interface and study libraries for offline use
 - Saved chat text conversations and optional tutor memory persist locally until deleted (uploaded images and PDFs are not stored)
 - Android app with a 2.5-second launch screen
 
-AI answers and generated content need internet access and a Gemini API key. Voice recognition may also need a network connection or a speech service installed on the device. Spoken responses use the device's available speech voices; the selectable styles do not reproduce the JARVIS or FRIDAY character voices. Chat history, study memory, voice preference, and the key are stored on this device only; there is no account sync or cloud backup. Android uninstall or clearing app data may remove them. The key is sent directly to Google's API and is not secret from someone with access to the device or app. Use a personal key, restrict it in Google AI Studio where available, and do not enter a key on a shared device.
+AI answers and generated content need internet access and a Gemini API key. Voice recognition may also need a network connection or a speech service installed on the device. Spoken responses use your device's available speech engine; pitch and pace are adjustable, but voice timbre (including any metallic quality) depends on that engine. The app does not reproduce a character voice. Live camera capture requires camera permission and a secure app/site context; photo-library upload remains available separately. Chat history, study memory, voice preferences, and the key are stored on this device only; there is no account sync or cloud backup. Android uninstall or clearing app data may remove them. The key is sent directly to Google's API and is not secret from someone with access to the device or app. Use a personal key, restrict it in Google AI Studio where available, and do not enter a key on a shared device.
 
 Mumbai University course lists and formula groups remain general study guides because subjects vary by scheme and admission year. For autonomous SLRTCE students, **Syllabus & Modules** links the official syllabus PDFs and expands verified module names under supported courses. Use the linked PDF for the complete syllabus and elective details, including courses whose module names are not yet listed in-app. SLRTCE currently publishes only the first-year Cyber Security syllabus, so later years are not guessed or shown as official. Import the relevant PDF for syllabus-aware AI study help. Imported syllabus text and student settings stay on the device.
 

@@ -14,6 +14,8 @@ const App = {
   currentImage: null,
   currentPDF: null,
   voiceStyle: '',
+  voicePitch: 0.62,
+  voiceRate: 0.86,
   voiceChatEnabled: false,
   pendingVoiceAction: '',
   voiceTranscript: '',
@@ -33,6 +35,7 @@ const App = {
   recognition: null,
   synth: window.speechSynthesis,
   pdfDoc: null,
+  cameraStream: null,
 
   init() {
     this.loadSettings();
@@ -52,7 +55,8 @@ const App = {
     else this.checkApiKey();
     Calculator.init();
     StudyTools.init();
-    console.log('StudyMind AI initialized');
+    EngineeringTools.init();
+    console.log('BTech AI initialized');
   },
 
   loadSettings() {
@@ -62,6 +66,8 @@ const App = {
     this.studentName = localStorage.getItem('student_name')?.trim().slice(0, 40) || '';
     const savedVoiceStyle = localStorage.getItem('voice_style');
     this.voiceStyle = ['jarvis', 'friday'].includes(savedVoiceStyle) ? savedVoiceStyle : '';
+    this.voicePitch = this.getSavedVoiceSetting('voice_pitch', 0.55, 1.3, this.voiceStyle === 'friday' ? 1.05 : 0.62);
+    this.voiceRate = this.getSavedVoiceSetting('voice_rate', 0.75, 1.2, this.voiceStyle === 'friday' ? 1 : 0.86);
     this.syllabusText = localStorage.getItem('official_syllabus_text') || '';
     this.syllabusFileName = localStorage.getItem('official_syllabus_name') || '';
 
@@ -81,6 +87,11 @@ const App = {
       console.error('Unable to load university profile:', error);
       showToast('University profile could not be read. Please choose your university again.', 'error');
     }
+  },
+
+  getSavedVoiceSetting(key, minimum, maximum, fallback) {
+    const saved = Number(localStorage.getItem(key));
+    return Number.isFinite(saved) && saved >= minimum && saved <= maximum ? saved : fallback;
   },
 
   openInstitutionSetup(required = false) {
@@ -177,7 +188,7 @@ const App = {
     if (role) {
       role.textContent = this.institutionProfile
         ? `${this.getProgramName()} · ${this.institutionProfile.type === 'autonomous' ? 'SLRTCE' : 'Mumbai University'}`
-        : 'StudyMind AI student';
+        : 'BTech AI student';
     }
   },
 
@@ -332,11 +343,17 @@ const App = {
     // Image upload
     document.getElementById('image-input')?.addEventListener('change', (e) => {
       this.handleImageUpload(e.target.files[0]);
+      e.target.value = '';
     });
 
     // PDF upload
     document.getElementById('pdf-input')?.addEventListener('change', (e) => {
       this.handlePDFUpload(e.target.files[0]);
+      e.target.value = '';
+    });
+
+    document.getElementById('camera-modal')?.addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) this.closeCamera();
     });
 
     document.getElementById('syllabus-file-input')?.addEventListener('change', (e) => {
@@ -378,6 +395,7 @@ const App = {
       }
       if (e.key === 'Escape') {
         this.hideApiKeyModal();
+        if (this.cameraStream) this.closeCamera();
         this.closeMobileSidebar();
       }
     });
@@ -417,6 +435,7 @@ const App = {
   },
 
   showSection(section) {
+    if (this.cameraStream) this.closeCamera();
     this.currentSection = section;
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -426,6 +445,27 @@ const App = {
 
     if (sectionEl) sectionEl.classList.add('active');
     if (navEl) navEl.classList.add('active');
+    const sectionTitles = {
+      dashboard: 'Study Hub',
+      chat: 'AI Chat',
+      history: 'Chat History',
+      flashcards: 'Flashcards',
+      quiz: 'Quiz Mode',
+      notes: 'Notes Summarizer',
+      mindmap: 'Mind Maps',
+      curriculum: 'Syllabus & Modules',
+      'study-tools': 'Study Planner',
+      'engineering-lab': 'Engineering Lab',
+      formulas: 'Formula Book',
+      periodic: 'Periodic Table',
+      calculator: 'Scientific Calculator',
+      converter: 'Unit Converter',
+      graph: 'Function Plotter',
+      logic: 'Logic Gates',
+      settings: 'Settings'
+    };
+    const headerTitle = document.getElementById('header-title');
+    if (headerTitle && sectionTitles[section]) headerTitle.textContent = `${sectionTitles[section]} — BTech AI`;
 
     // Section-specific init
     if (section === 'dashboard') this.renderDashboard();
@@ -804,7 +844,7 @@ const App = {
     div.className = 'welcome-banner';
     div.innerHTML = `
       <div class="welcome-icon">🧠</div>
-      <h2>Welcome to StudyMind AI</h2>
+      <h2>Welcome to BTech AI</h2>
       <p>Your intelligent BTech tutor. Ask me anything about Maths, Physics, Mechanics, Electronics, CS, and more!</p>
       <div class="example-questions">
         <button class="example-btn" onclick="App.setExample(this)">Solve integral of x²sin(x)</button>
@@ -898,13 +938,72 @@ const App = {
     document.getElementById('pdf-input').value = '';
   },
 
-  openCamera() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'camera';
-    input.onchange = (e) => this.handleImageUpload(e.target.files[0]);
-    input.click();
+  async openCamera() {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      showToast('Live camera capture is unavailable here. Use Upload Image to choose a photo instead.', 'error');
+      return;
+    }
+
+    this.closeCamera();
+    try {
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' } }
+      });
+      const video = document.getElementById('camera-preview');
+      const modal = document.getElementById('camera-modal');
+      if (!video || !modal) {
+        this.closeCamera();
+        showToast('Camera preview could not be opened.', 'error');
+        return;
+      }
+      video.srcObject = this.cameraStream;
+      modal.classList.add('active');
+      await video.play();
+    } catch (error) {
+      this.closeCamera();
+      const message = error.name === 'NotAllowedError'
+        ? 'Camera permission was denied. Allow camera access in your device settings, or use Upload Image.'
+        : error.name === 'NotFoundError'
+          ? 'No camera was found. Use Upload Image to choose a photo.'
+          : `Could not start the camera: ${error.message || 'check camera permissions and try again.'}`;
+      showToast(message, 'error');
+    }
+  },
+
+  closeCamera() {
+    const video = document.getElementById('camera-preview');
+    video?.pause();
+    if (video) video.srcObject = null;
+    this.cameraStream?.getTracks().forEach(track => track.stop());
+    this.cameraStream = null;
+    document.getElementById('camera-modal')?.classList.remove('active');
+  },
+
+  captureCameraPhoto() {
+    const video = document.getElementById('camera-preview');
+    if (!video?.videoWidth || !video.videoHeight) {
+      showToast('The camera is not ready yet. Please wait a moment and try again.', 'error');
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      showToast('Could not prepare the photo. Please try again.', 'error');
+      return;
+    }
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(blob => {
+      if (!blob) {
+        showToast('Could not capture the photo. Please try again.', 'error');
+        return;
+      }
+      this.handleImageUpload(new File([blob], 'study-photo.jpg', { type: 'image/jpeg' }));
+      this.closeCamera();
+    }, 'image/jpeg', 0.92);
   },
 
   // ============ VOICE INPUT ============
@@ -1062,19 +1161,47 @@ const App = {
     if (!['jarvis', 'friday'].includes(style)) return;
     try {
       localStorage.setItem('voice_style', style);
+      if (!localStorage.getItem('voice_pitch')) {
+        localStorage.setItem('voice_pitch', style === 'friday' ? '1.05' : '0.62');
+      }
+      if (!localStorage.getItem('voice_rate')) {
+        localStorage.setItem('voice_rate', style === 'friday' ? '1' : '0.86');
+      }
     } catch (error) {
       console.error('Unable to save assistant voice style:', error);
       showToast('Could not save your voice preference on this device.', 'error');
       return;
     }
     this.voiceStyle = style;
+    this.voicePitch = this.getSavedVoiceSetting('voice_pitch', 0.55, 1.3, style === 'friday' ? 1.05 : 0.62);
+    this.voiceRate = this.getSavedVoiceSetting('voice_rate', 0.75, 1.2, style === 'friday' ? 1 : 0.86);
     const setting = document.getElementById('voice-style-setting');
     if (setting) setting.value = style;
+    this.loadSettingsForm();
     document.getElementById('voice-style-modal')?.classList.remove('active');
     const action = this.pendingVoiceAction;
     this.pendingVoiceAction = '';
     if (action === 'voice-chat') this.toggleVoiceChat();
     else if (action === 'input') this.toggleVoiceInput();
+  },
+
+  updateVoiceSettingLabels() {
+    const pitchInput = document.getElementById('voice-pitch-setting');
+    const rateInput = document.getElementById('voice-rate-setting');
+    const pitch = Number(pitchInput?.value);
+    const rate = Number(rateInput?.value);
+    const pitchLabel = document.getElementById('voice-pitch-value');
+    const rateLabel = document.getElementById('voice-rate-value');
+    if (pitchLabel && Number.isFinite(pitch)) pitchLabel.value = pitch.toFixed(2);
+    if (rateLabel && Number.isFinite(rate)) rateLabel.value = `${rate.toFixed(2)}×`;
+  },
+
+  previewVoice() {
+    this.voicePitch = Number(document.getElementById('voice-pitch-setting')?.value) || 0.62;
+    this.voiceRate = Number(document.getElementById('voice-rate-setting')?.value) || 0.86;
+    const style = document.getElementById('voice-style-setting')?.value;
+    if (['jarvis', 'friday'].includes(style)) this.voiceStyle = style;
+    this.speakText('Hello. I am BTech AI. Let us work through this step by step, with clear explanations and practical examples.');
   },
 
   dismissVoiceStyle() {
@@ -1179,7 +1306,10 @@ const App = {
     const style = this.voiceStyle === 'friday' ? 'friday' : 'jarvis';
     const voices = this.synth?.getVoices?.() || [];
     const englishVoices = voices.filter(voice => /^en([_-]|$)/i.test(voice.lang));
-    const voice = englishVoices.find(item => /^en[-_]in/i.test(item.lang))
+    const preferredLocales = style === 'jarvis' ? ['en-GB', 'en-IN', 'en-US'] : ['en-US', 'en-IN', 'en-GB'];
+    const voice = preferredLocales
+      .map(locale => englishVoices.find(item => item.lang.toLowerCase().replace('_', '-') === locale.toLowerCase()))
+      .find(Boolean)
       || englishVoices[0];
     const utteranceChunks = [];
     let remaining = spokenText;
@@ -1208,7 +1338,13 @@ const App = {
         this.activeUtteranceId = utteranceId;
         this.speechNextChunk = speakNext;
         try {
-          window.AndroidSpeech.speakText(utteranceChunks[currentChunkIndex], style, utteranceId);
+          window.AndroidSpeech.speakText(
+            utteranceChunks[currentChunkIndex],
+            style,
+            utteranceId,
+            this.voicePitch,
+            this.voiceRate
+          );
         } catch (error) {
           this.onAndroidSpeechPlaybackError(utteranceId);
         }
@@ -1217,8 +1353,8 @@ const App = {
       const utterance = new SpeechSynthesisUtterance(utteranceChunks[currentChunkIndex]);
       utterance.lang = voice?.lang || 'en-IN';
       if (voice) utterance.voice = voice;
-      utterance.rate = style === 'friday' ? 1 : 0.92;
-      utterance.pitch = style === 'friday' ? 1.08 : 0.86;
+      utterance.rate = this.voiceRate;
+      utterance.pitch = this.voicePitch;
       utterance.onend = speakNext;
       utterance.onerror = event => {
         if (token !== this.speechToken || event.error === 'canceled' || event.error === 'interrupted') return;
@@ -1327,13 +1463,18 @@ const App = {
                           : 'Module details vary by scheme';
                       return `
                         <div class="curriculum-course-item">
-                          <button class="curriculum-course" onclick="App.startCurriculumCourse(${JSON.stringify(course)}, ${JSON.stringify(branch.name)}, ${JSON.stringify(semester.name)}, ${JSON.stringify(year.revision || '')}, ${JSON.stringify(year.syllabusUrl || '')})">
+                          <button class="curriculum-course" type="button" onclick="App.startCurriculumCourse(${this.escapeHtmlAttribute(JSON.stringify(course))}, ${this.escapeHtmlAttribute(JSON.stringify(branch.name))}, ${this.escapeHtmlAttribute(JSON.stringify(semester.name))}, ${this.escapeHtmlAttribute(JSON.stringify(year.revision || ''))}, ${this.escapeHtmlAttribute(JSON.stringify(year.syllabusUrl || ''))})">
                             ${this.escapeHtml(course)} <span aria-hidden="true">→</span>
                           </button>
                           <details class="curriculum-modules">
                             <summary>${moduleLabel}</summary>
                             ${modules?.length
-                              ? `<ol>${modules.map(module => `<li>${this.escapeHtml(module)}</li>`).join('')}</ol>`
+                              ? `<p class="curriculum-study-note">Choose a topic for a self-study guide with learning goals, prerequisites, key ideas, a worked example, practice questions, and a revision plan. If the official syllabus is not imported, the AI must label any outline as general guidance.</p>
+                                <ol class="curriculum-topic-list">${modules.map(module => `
+                                  <li>
+                                    <span>${this.escapeHtml(module)}</span>
+                                    <button class="btn btn-secondary" type="button" onclick="App.startCurriculumCourse(${this.escapeHtmlAttribute(JSON.stringify(course))}, ${this.escapeHtmlAttribute(JSON.stringify(branch.name))}, ${this.escapeHtmlAttribute(JSON.stringify(semester.name))}, ${this.escapeHtmlAttribute(JSON.stringify(year.revision || ''))}, ${this.escapeHtmlAttribute(JSON.stringify(year.syllabusUrl || ''))}, ${this.escapeHtmlAttribute(JSON.stringify(module))})">Build study guide</button>
+                                  </li>`).join('')}</ol>`
                               : `<p>${this.institutionProfile?.type === 'autonomous'
                                 ? 'A verified module list is not available in this in-app view. Check the linked official syllabus PDF.'
                                 : 'Mumbai University subjects vary by scheme and year. Choose the applicable syllabus to confirm module names.'}
@@ -1353,7 +1494,7 @@ const App = {
     this.updateSyllabusStatus();
   },
 
-  startCurriculumCourse(course, branch, semesterName, revision, syllabusUrl) {
+  startCurriculumCourse(course, branch, semesterName, revision, syllabusUrl, module = '') {
     const input = document.getElementById('chat-input');
     this.showSection('chat');
     if (input) {
@@ -1368,7 +1509,8 @@ const App = {
       const syllabusSource = syllabusUrl
         ? ` The official syllabus PDF for this year is ${syllabusUrl}; do not claim to know its contents unless they are present in my imported syllabus or chat.`
         : '';
-      input.value = `I'm studying ${course} in ${branch} under ${institution}.${semester}${syllabusSource} Use my imported official syllabus if available. If the syllabus does not confirm a course unit or exam pattern, say so instead of guessing. Explain the key topics and show a step-by-step worked example.`;
+      const selectedTopic = module ? ` Focus this guide on the syllabus topic "${module}"` : ' Create an introductory guide for this course';
+      input.value = `I'm studying ${course} in ${branch} under ${institution}.${semester}${syllabusSource}${selectedTopic}. Build a practical self-study guide with learning outcomes, prerequisite knowledge, core concepts and definitions, important equations or methods, one step-by-step worked example, independent practice questions with a short answer check, a 5-day study plan, and a revision checklist. Use my imported official syllabus when available. Clearly label any unsourced topic outline as general study guidance; do not invent official syllabus content, module names, course codes, or exam rules.`;
       input.focus();
       this.autoResize({ target: input });
     }
@@ -1440,7 +1582,7 @@ const App = {
       showToast('Formula sheet not found.', 'error');
       return;
     }
-    const lines = [`${data.name} Formula Sheet`, 'Created with StudyMind AI', ''];
+    const lines = [`${data.name} Formula Sheet`, 'Created with BTech AI', ''];
     data.formulas.forEach(category => {
       lines.push(category.category);
       category.items.forEach(item => lines.push(`${item.name}: ${item.formula}`));
@@ -1456,7 +1598,7 @@ const App = {
       showToast('Formula module not found.', 'error');
       return;
     }
-    const lines = [`${data.name} — ${module.category}`, 'Created with StudyMind AI', ''];
+    const lines = [`${data.name} — ${module.category}`, 'Created with BTech AI', ''];
     module.items.forEach(item => lines.push(`${item.name}: ${item.formula}`));
     const safeModule = module.category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'module';
     this.downloadTextFile(`${subjectKey}-${safeModule}-formulas.txt`, lines.join('\n'));
@@ -1472,7 +1614,7 @@ const App = {
     const content = this.currentFlashcards.map((card, index) =>
       `${index + 1}. ${card.front}\nAnswer: ${card.back}`
     ).join('\n\n');
-    this.downloadTextFile(`${safeTopic}-flashcards.txt`, `StudyMind AI Flashcards: ${topic}\n\n${content}`);
+    this.downloadTextFile(`${safeTopic}-flashcards.txt`, `BTech AI Flashcards: ${topic}\n\n${content}`);
   },
 
   downloadTextFile(filename, content) {
@@ -2269,6 +2411,14 @@ const App = {
     const model = document.getElementById('settings-model')?.value;
     const studyMemory = document.getElementById('study-memory')?.value.trim() || '';
     const voiceStyle = document.getElementById('voice-style-setting')?.value || '';
+    const voicePitch = Number(document.getElementById('voice-pitch-setting')?.value);
+    const voiceRate = Number(document.getElementById('voice-rate-setting')?.value);
+
+    if (!Number.isFinite(voicePitch) || voicePitch < 0.55 || voicePitch > 1.3 ||
+        !Number.isFinite(voiceRate) || voiceRate < 0.75 || voiceRate > 1.2) {
+      showToast('Choose a pitch and pace within the available ranges.', 'error');
+      return;
+    }
 
     if (apiKey) {
       localStorage.setItem('gemini_api_key', apiKey);
@@ -2282,6 +2432,11 @@ const App = {
         localStorage.setItem('voice_style', voiceStyle);
         this.voiceStyle = voiceStyle;
       }
+      localStorage.setItem('voice_pitch', String(voicePitch));
+      localStorage.setItem('voice_rate', String(voiceRate));
+      this.voicePitch = voicePitch;
+      this.voiceRate = voiceRate;
+      this.updateVoiceSettingLabels();
       showToast('Settings and study memory saved on this device.', 'success');
     } catch (error) {
       console.error('Unable to save study memory:', error);
@@ -2294,10 +2449,15 @@ const App = {
     const modelEl = document.getElementById('settings-model');
     const memoryEl = document.getElementById('study-memory');
     const voiceStyleEl = document.getElementById('voice-style-setting');
+    const voicePitchEl = document.getElementById('voice-pitch-setting');
+    const voiceRateEl = document.getElementById('voice-rate-setting');
     if (apiKeyEl) apiKeyEl.value = localStorage.getItem('gemini_api_key') || '';
     if (modelEl) modelEl.value = GeminiAPI.model;
     if (memoryEl) memoryEl.value = localStorage.getItem('study_memory') || '';
     if (voiceStyleEl) voiceStyleEl.value = this.voiceStyle;
+    if (voicePitchEl) voicePitchEl.value = String(this.voicePitch);
+    if (voiceRateEl) voiceRateEl.value = String(this.voiceRate);
+    this.updateVoiceSettingLabels();
     this.updateSyllabusStatus();
   },
 
@@ -2313,6 +2473,10 @@ const App = {
     const div = document.createElement('div');
     div.appendChild(document.createTextNode(text));
     return div.innerHTML;
+  },
+
+  escapeHtmlAttribute(text) {
+    return this.escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 };
 

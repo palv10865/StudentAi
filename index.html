@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StudyMind AI — BTech Tutor</title>
-  <meta name="description" content="AI-powered tutor for BTech students covering Maths, Physics, Mechanics, Electronics, CS and more.">
+  <title>BTech AI — Engineering Study Assistant</title>
+  <meta name="description" content="Your BTech study assistant for module guides, self-study plans, engineering tools, and voice tutoring.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1324'/%3E%3Cpath d='M18 45V19h10c7 0 11 3 11 8 0 3-2 5-4 6 4 1 6 4 6 7 0 5-4 8-11 8H18zm8-16h2c2 0 3-1 3-2s-1-2-3-2h-2v4zm0 10h4c2 0 3-1 3-2s-1-2-3-2h-4v4z' fill='%235ee7f5'/%3E%3Ccircle cx='48' cy='18' r='4' fill='%23f6b453'/%3E%3C/svg%3E">
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="vendor/highlight.js/atom-one-dark.min.css">
@@ -30,10 +31,12 @@
   <!-- ============ SIDEBAR ============ -->
   <nav id="sidebar">
     <div class="sidebar-header">
-      <div class="logo-icon">🧠</div>
+      <div class="logo-icon brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" focusable="false"><path d="M12 35V13h9c6 0 10 3 10 7 0 2-1 4-3 5 3 1 5 3 5 6 0 5-4 8-10 8h-4v-4h4c3 0 5-1 5-4s-2-4-5-4h-5V23h4c3 0 4-1 4-3s-2-3-5-3h-5v18z"/><path class="brand-circuit" d="M34 14h5v5m-5 15h5v-5"/></svg>
+      </div>
       <div class="logo-text">
-        <div class="logo-title">StudyMind AI</div>
-        <div class="logo-sub">BTech Tutor</div>
+        <div class="logo-title">BTech AI</div>
+        <div class="logo-sub">Engineering Study Assistant</div>
       </div>
     </div>
 
@@ -78,6 +81,10 @@
       <div class="nav-item" data-section="study-tools" onclick="App.showSection('study-tools')">
         <span class="nav-icon">⏱️</span>
         <span class="nav-label">Study Planner</span>
+      </div>
+      <div class="nav-item" data-section="engineering-lab" onclick="App.showSection('engineering-lab')">
+        <span class="nav-icon">🧰</span>
+        <span class="nav-label">Engineering Lab</span>
       </div>
 
       <!-- Reference -->
@@ -133,7 +140,7 @@
       <div class="student-profile-avatar" id="student-profile-avatar">ST</div>
       <div class="student-profile-info">
         <div class="student-profile-name" id="student-profile-name">Student</div>
-        <div class="student-profile-role" id="student-profile-role">StudyMind AI student</div>
+        <div class="student-profile-role" id="student-profile-role">BTech AI student</div>
       </div>
     </div>
   </nav>
@@ -145,7 +152,7 @@
     <!-- Header -->
     <header id="app-header">
       <button class="icon-btn" id="sidebar-toggle" aria-controls="sidebar" aria-expanded="false" onclick="App.toggleSidebar()" title="Toggle navigation menu">☰</button>
-      <span class="header-title" id="header-title">AI Chat — BTech Tutor</span>
+      <span class="header-title" id="header-title">AI Chat — BTech AI</span>
       <div class="header-actions">
         <button class="icon-btn" onclick="App.startNewChat()" title="Start a new chat" id="clear-btn">✚</button>
         <button class="icon-btn" onclick="App.showSection('history')" title="Chat history">🕐</button>
@@ -179,6 +186,7 @@
           <button class="study-hub-card" data-tool-card="formula book sheet module subject engineering" onclick="App.showSection('formulas')"><span>📐</span><strong>Formula Book</strong><small>Browse formulas by subject and download module sheets.</small></button>
           <button class="study-hub-card" data-tool-card="periodic table chemistry elements" onclick="App.showSection('periodic')"><span>⚗️</span><strong>Periodic Table</strong><small>Explore element properties and categories.</small></button>
           <button class="study-hub-card" data-tool-card="study planner focus pomodoro timer gpa grade calculator" onclick="App.showSection('study-tools')"><span>⏱️</span><strong>Study Planner</strong><small>Focus timer and semester GPA calculator.</small></button>
+          <button class="study-hub-card" data-tool-card="engineering lab ohms law resistor color code binary hex number base electrical circuits" onclick="App.showSection('engineering-lab')"><span>🧰</span><strong>Engineering Lab</strong><small>Work out circuit values, decode resistor bands, and convert number bases offline.</small></button>
           <button class="study-hub-card" data-tool-card="scientific calculator maths" onclick="App.showSection('calculator')"><span>🔢</span><strong>Scientific Calculator</strong><small>Evaluate scientific and engineering calculations.</small></button>
           <button class="study-hub-card" data-tool-card="unit converter engineering measurements" onclick="App.showSection('converter')"><span>⚖️</span><strong>Unit Converter</strong><small>Convert common engineering units.</small></button>
           <button class="study-hub-card" data-tool-card="graph plot function mathematics" onclick="App.showSection('graph')"><span>📈</span><strong>Graph Plotter</strong><small>Plot functions and compare curves.</small></button>
@@ -215,7 +223,7 @@
             <input type="file" id="image-input" accept="image/*" style="display:none">
             <input type="file" id="pdf-input" accept="application/pdf" style="display:none">
             <button class="input-btn" onclick="document.getElementById('image-input').click()" title="Upload Image">🖼️</button>
-            <button class="input-btn" onclick="App.openCamera()" title="Camera">📷</button>
+            <button class="input-btn" onclick="App.openCamera()" title="Take a photo with your camera" aria-label="Take a photo with your camera">📷</button>
             <button class="input-btn" onclick="document.getElementById('pdf-input').click()" title="Upload PDF">📄</button>
             <button class="input-btn voice-btn" id="voice-btn" onclick="App.toggleVoiceInput()" title="Voice input" aria-label="Start voice input">🎤</button>
             <button class="input-btn send-btn" onclick="App.sendMessage()" title="Send (Enter)">➤</button>
@@ -695,11 +703,78 @@ Newton's Laws of Motion:
       </div>
     </section>
 
+    <!-- ============ ENGINEERING LAB ============ -->
+    <section id="engineering-lab-section" class="section">
+      <div class="section-header">
+        <h2>🧰 Engineering Lab</h2>
+        <p>Fast, offline tools for electrical circuits and digital number systems.</p>
+      </div>
+      <div class="section-inner engineering-lab-grid">
+        <article class="card engineering-tool-card">
+          <h3>⚡ Ohm’s Law Workbench</h3>
+          <p>Enter any two values to calculate voltage, current, resistance, and power.</p>
+          <div class="engineering-input-grid">
+            <label>Voltage (V)<input class="form-input" id="ohms-voltage" type="number" step="any" placeholder="V"></label>
+            <label>Current (A)<input class="form-input" id="ohms-current" type="number" step="any" placeholder="I"></label>
+            <label>Resistance (Ω)<input class="form-input" id="ohms-resistance" type="number" step="any" placeholder="R"></label>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="EngineeringTools.calculateOhmsLaw()">Calculate</button>
+          <div class="engineering-result" id="ohms-result" aria-live="polite">Enter two known values to solve the circuit.</div>
+        </article>
+
+        <article class="card engineering-tool-card">
+          <h3>🎨 Four-band Resistor Decoder</h3>
+          <p>Select the resistor bands to read its resistance and tolerance.</p>
+          <div class="engineering-input-grid resistor-bands">
+            <label>Band 1<select class="form-select" id="resistor-band-1"></select></label>
+            <label>Band 2<select class="form-select" id="resistor-band-2"></select></label>
+            <label>Multiplier<select class="form-select" id="resistor-multiplier"></select></label>
+            <label>Tolerance<select class="form-select" id="resistor-tolerance"></select></label>
+          </div>
+          <div class="engineering-result" id="resistor-result" aria-live="polite">Brown · Black · Red · Gold = 1 kΩ ±5%</div>
+        </article>
+
+        <article class="card engineering-tool-card">
+          <h3>🔌 Resistor Network Calculator</h3>
+          <p>Find equivalent resistance for a series or parallel network.</p>
+          <div class="engineering-input-grid">
+            <label>Resistances (Ω)<input class="form-input" id="network-resistances" type="text" inputmode="decimal" placeholder="e.g. 220, 330, 1000"></label>
+            <label>Connection<select class="form-select" id="network-mode"><option value="series">Series</option><option value="parallel">Parallel</option></select></label>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="EngineeringTools.calculateResistorNetwork()">Calculate</button>
+          <div class="engineering-result" id="network-result" aria-live="polite">Enter at least two positive resistor values.</div>
+        </article>
+
+        <article class="card engineering-tool-card">
+          <h3>⏱️ RC Time Constant</h3>
+          <p>Calculate the time constant and cutoff frequency for a simple RC circuit.</p>
+          <div class="engineering-input-grid">
+            <label>Resistance (Ω)<input class="form-input" id="rc-resistance" type="number" step="any" min="0" placeholder="e.g. 10000"></label>
+            <label>Capacitance (µF)<input class="form-input" id="rc-capacitance" type="number" step="any" min="0" placeholder="e.g. 10"></label>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="EngineeringTools.calculateRcTiming()">Calculate</button>
+          <div class="engineering-result" id="rc-result" aria-live="polite">Enter resistance and capacitance values.</div>
+        </article>
+
+        <article class="card engineering-tool-card">
+          <h3>⌨️ Number Base Converter</h3>
+          <p>Convert binary, decimal, hexadecimal, or octal integers.</p>
+          <div class="engineering-input-grid">
+            <label>Value<input class="form-input" id="base-value" type="text" inputmode="text" placeholder="e.g. 101101"></label>
+            <label>From<select class="form-select" id="base-from"><option value="2">Binary</option><option value="8">Octal</option><option value="10" selected>Decimal</option><option value="16">Hexadecimal</option></select></label>
+            <label>To<select class="form-select" id="base-to"><option value="2">Binary</option><option value="8">Octal</option><option value="10">Decimal</option><option value="16" selected>Hexadecimal</option></select></label>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="EngineeringTools.convertBase()">Convert</button>
+          <div class="engineering-result" id="base-result" aria-live="polite">Your converted value will appear here.</div>
+        </article>
+      </div>
+    </section>
+
     <!-- ============ SETTINGS SECTION ============ -->
     <section id="settings-section" class="section">
       <div class="section-header">
         <h2>⚙️ Settings</h2>
-        <p>Configure your StudyMind AI experience</p>
+        <p>Configure your BTech AI study assistant.</p>
       </div>
       <div class="section-inner">
         <div class="settings-max-w">
@@ -731,10 +806,15 @@ Newton's Laws of Motion:
             <label for="voice-style-setting">Assistant voice style</label>
             <select id="voice-style-setting" class="form-select">
               <option value="">Ask me the first time I use voice chat</option>
-              <option value="jarvis">Calm and precise (JARVIS-inspired qualities)</option>
-              <option value="friday">Warm and confident (FRIDAY-inspired qualities)</option>
+              <option value="jarvis">Cinematic — deep, clear, precise</option>
+              <option value="friday">Warm — bright, assured, conversational</option>
             </select>
-            <p>Uses voices available on your device. These are style settings, not copies of either character voice. Voice recognition and spoken answers may require internet or device speech services.</p>
+            <label for="voice-pitch-setting">Pitch <output id="voice-pitch-value" for="voice-pitch-setting">0.62</output></label>
+            <input id="voice-pitch-setting" class="voice-range" type="range" min="0.55" max="1.3" step="0.01" value="0.62" oninput="App.updateVoiceSettingLabels()">
+            <label for="voice-rate-setting">Speaking pace <output id="voice-rate-value" for="voice-rate-setting">0.86×</output></label>
+            <input id="voice-rate-setting" class="voice-range" type="range" min="0.75" max="1.2" step="0.01" value="0.86" oninput="App.updateVoiceSettingLabels()">
+            <button class="btn btn-secondary" type="button" onclick="App.previewVoice()">▶ Preview voice</button>
+            <p>Uses your device’s available English voice and speech engine. Pitch and pace are adjustable, but the voice’s timbre and any metallic/brass quality depend on your device; this does not reproduce a character voice.</p>
           </div>
 
           <div class="settings-section-title">🧠 Study Memory</div>
@@ -757,10 +837,10 @@ Newton's Laws of Motion:
           <div class="settings-section-title">📚 About</div>
           <div class="card">
             <p style="font-size:14px;line-height:1.6;color:var(--text2);">
-              <strong style="color:var(--text);">StudyMind AI</strong> is an intelligent tutor for BTech engineering students.
+              <strong style="color:var(--text);">BTech AI</strong> is an intelligent tutor for BTech engineering students.
               It uses Google Gemini AI to provide step-by-step solutions, formula references, practice quizzes, and more.<br><br>
-              <strong>Features:</strong> AI Chat • Math Rendering • Image/PDF Upload • Scientific Calculator • 
-              Unit Converter • Formula Sheet • Flashcards • Quizzes • Summarizer • Mind Maps • Voice Chat • Periodic Table • Logic Gates<br><br>
+              <strong>Features:</strong> AI Chat • Live Camera & Photo Upload • PDF Questions • Self-Study Guides • Scientific Calculator •
+              Unit Converter • Formula Book • Flashcards • Quizzes • Summarizer • Mind Maps • Adjustable Deep-Voice Chat • Ohm’s Law • Resistor Network & Decoder • RC Timing • Number Base Converter • Periodic Table • Logic Gates<br><br>
               <strong>Keyboard Shortcuts:</strong><br>
               • <code>Ctrl+/</code> — Focus chat input<br>
               • <code>Enter</code> — Send message<br>
@@ -785,7 +865,7 @@ Newton's Laws of Motion:
 <!-- University Setup Modal -->
 <div class="modal-overlay" id="institution-modal">
   <div class="modal institution-modal">
-    <div class="logo-icon">🎓</div>
+    <div class="logo-icon brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M12 35V13h9c6 0 10 3 10 7 0 2-1 4-3 5 3 1 5 3 5 6 0 5-4 8-10 8h-4v-4h4c3 0 5-1 5-4s-2-4-5-4h-5V23h4c3 0 4-1 4-3s-2-3-5-3h-5v18z"/><path class="brand-circuit" d="M34 14h5v5m-5 15h5v-5"/></svg></div>
     <h2>Set up your study profile</h2>
     <p>Your display name and study details are saved only on this device. This is not an account login, and the Gemini API key does not identify its Google account.</p>
     <div class="settings-row">
@@ -853,19 +933,32 @@ Newton's Laws of Motion:
   <div class="modal">
     <div class="logo-icon">🗣️</div>
     <h2 id="voice-style-title">Choose your assistant voice</h2>
-    <p>Choose a broad speaking style. Your device supplies the voice; this does not reproduce the original JARVIS or FRIDAY character voices.</p>
+    <p>Choose a cinematic deep, clear delivery or a warmer conversational tone. Pitch and pace can be adjusted in Settings; voice character and timbre depend on your device.</p>
     <div class="voice-style-options">
       <button type="button" class="voice-style-option" onclick="App.selectVoiceStyle('jarvis')">
         <strong>Calm and precise</strong>
-        <span>Measured pace and a lower, steady tone (JARVIS-inspired qualities)</span>
+        <span>Deep pitch, clear measured pace, crisp phrasing, and calm delivery.</span>
       </button>
       <button type="button" class="voice-style-option" onclick="App.selectVoiceStyle('friday')">
         <strong>Warm and confident</strong>
-        <span>Clear pace and a warmer, brighter tone (FRIDAY-inspired qualities)</span>
+        <span>Brighter pitch, clear pacing, and a warm, assured delivery.</span>
       </button>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" onclick="App.dismissVoiceStyle()">Not now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Camera Capture Modal -->
+<div class="modal-overlay" id="camera-modal" role="dialog" aria-modal="true" aria-labelledby="camera-title">
+  <div class="modal camera-modal">
+    <h2 id="camera-title">Take a study photo</h2>
+    <p>Camera preview stays on this device. The photo is sent only when you choose to send your chat message.</p>
+    <video id="camera-preview" autoplay playsinline muted></video>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="App.closeCamera()">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="App.captureCameraPhoto()">📷 Capture photo</button>
     </div>
   </div>
 </div>
